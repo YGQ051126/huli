@@ -1,0 +1,14 @@
+{
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false,
+  "exclude": [
+    "**/site-packages/**",
+    "C:/Users/**/AppData/Local/Programs/Python/**/Lib/**",
+    "C:/Python*/Lib/**"
+  ],
+  "ignore": [
+    "C:/Users/**/AppData/Local/Programs/Python/**/Lib/**",
+    "C:/Python*/Lib/**"
+  ]
+}

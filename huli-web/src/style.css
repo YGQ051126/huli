@@ -1,0 +1,237 @@
+:root {
+  /* 主题色 */
+  --primary-color: #409EFF;
+  --success-color: #67C23A;
+  --warning-color: #E6A23C;
+  --danger-color: #F56C6C;
+  --info-color: #909399;
+  
+  /* 背景色 */
+  --bg-color: #f5f7fa;
+  --card-bg: #ffffff;
+  --header-bg: #ffffff;
+  --sidebar-bg: #304156;
+  
+  /* 文字颜色 */
+  --text-primary: #303133;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-placeholder: #c0c4cc;
+  
+  /* 边框颜色 */
+  --border-color: #e4e7ed;
+  --border-light: #ebeef5;
+  --border-lighter: #f2f6fc;
+  
+  /* 阴影 */
+  --shadow-base: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+  --shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --shadow-dark: 0 4px 20px rgba(0, 0, 0, 0.15);
+  
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* 圆角 */
+  --border-radius: 4px;
+  --border-radius-lg: 8px;
+  
+  /* 过渡 */
+  --transition-base: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  color: var(--text-primary);
+  background-color: var(--bg-color);
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  min-width: 320px;
+  font-size: 14px;
+}
+
+#app {
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: var(--transition-base);
+}
+
+a:hover {
+  color: #66b1ff;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+h1 {
+  font-size: 24px;
+}
+
+h2 {
+  font-size: 20px;
+}
+
+h3 {
+  font-size: 18px;
+}
+
+p {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--text-regular);
+}
+
+/* 卡片样式 */
+.el-card {
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-base);
+  margin-bottom: var(--spacing-lg);
+  transition: var(--transition-base);
+}
+
+.el-card:hover {
+  box-shadow: var(--shadow-light);
+}
+
+/* 按钮样式优化 */
+.el-button {
+  border-radius: var(--border-radius);
+  transition: var(--transition-base);
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-base);
+}
+
+.el-table__header-wrapper th {
+  background-color: var(--bg-color) !important;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* 表单样式优化 */
+.el-form-item__label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* 输入框样式优化 */
+.el-input__inner,
+.el-select__wrapper {
+  border-radius: var(--border-radius);
+  transition: var(--transition-base);
+}
+
+/* 标签页样式优化 */
+.el-tabs__nav-wrap::after {
+  background-color: var(--border-color);
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+  h1 {
+    font-size: 20px;
+  }
+  
+  h2 {
+    font-size: 18px;
+  }
+  
+  .el-card {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .el-button {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  :root {
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
+  }
+  
+  h1 {
+    font-size: 18px;
+  }
+  
+  h2 {
+    font-size: 16px;
+  }
+}
+
+/* 滚动条样式优化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--border-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-placeholder);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* 全局响应式工具类 */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+}
+
+@media screen and (max-width: 768px) {
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media screen and (max-width: 576px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}

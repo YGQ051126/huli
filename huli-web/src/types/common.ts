@@ -1,0 +1,5 @@
+export type Role = 'admin' | 'staff' | 'family'
+export type UserStatus = 'active' | 'inactive' | 'pending'
+export type AppointmentStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled'
+export type PaymentStatus = 'pending' | 'success' | 'failed'
+export type BillStatus = 'unpaid' | 'paid' | 'partially_paid'
