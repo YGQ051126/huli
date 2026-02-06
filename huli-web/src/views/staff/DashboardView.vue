@@ -49,8 +49,8 @@
                <el-card v-for="task in serviceTasks" :key="task.id" class="service-task-item" shadow="never">
                  <div class="task-header">
                    <span class="patient-name">{{ task.patient_name }}</span>
-                   <el-tag size="small" :type="task.status === 'processing' ? 'success' : 'warning'">
-                     {{ task.status === 'processing' ? '进行中' : '待处理' }}
+                   <el-tag size="small" :type="workStatusTag(task)">
+                     {{ workStatusText(task) }}
                    </el-tag>
                  </div>
                  <div class="task-content">
@@ -59,8 +59,14 @@
                    </el-tag>
                  </div>
                  <div class="task-footer">
-                   <span class="time">{{ formatDate(task.paid_at) }}</span>
-                   <el-button type="primary" size="small" @click="handleProcess(task)">处理/反馈</el-button>
+                   <span class="time">{{ formatWorkTime(task) }}</span>
+                   <el-checkbox
+                     v-if="task.kind === 'cleaning'"
+                     :model-value="task.status === 'completed'"
+                     :disabled="task.status === 'completed' || completingWorkId === String(task.id)"
+                     @change="(val: boolean) => val && completeCleaningTask(task)"
+                   />
+                   <el-button v-else type="primary" size="small" @click="handleProcess(task)">处理/反馈</el-button>
                  </div>
                </el-card>
              </div>
@@ -129,7 +135,7 @@
               </div>
               <div class="birthday-info">
                 <div class="patient-name">{{ p.name }}</div>
-                <div class="patient-detail">{{ p.age }}岁 ・ {{ p.room || '未分配房间' }}</div>
+                <div class="patient-detail">{{ p.age }}岁 ? {{ p.room || '未分配房间' }}</div>
               </div>
               <el-tag type="warning" effect="plain" size="small" round>Today</el-tag>
             </div>
@@ -176,26 +182,39 @@
 <script setup lang="ts">
  import { onMounted, ref, computed } from 'vue'
 import DailyCareTasks from '@/components/business/DailyCareTasks.vue'
-import { getDashboardData } from '@/services/tasks'
+import { getDashboardData, getTasks, completeTask } from '@/services/tasks'
 import { getServiceOrders, processServiceOrder, submitServiceFeedback, type ServiceOrder } from '@/services/services'
 import { 
   BellFilled, Warning, DataBoard, Timer, VideoPlay, 
   CircleCheckFilled, Present, Calendar, Refresh, Service, Plus
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 const dashboardLoading = ref(false)
 const loading = computed(() => dashboardLoading.value)
 
 const alerts = ref<any[]>([])
 const birthdays = ref<any[]>([])
-const serviceTasks = ref<ServiceOrder[]>([])
+type WorkItem = (ServiceOrder & { kind: 'service' }) | ({
+  kind: 'cleaning'
+  id: number | string
+  patient_name: string
+  status: 'pending' | 'processing' | 'completed'
+  items: Array<{ id: number | string; service_name: string }>
+  due_date: string
+  due_time?: string | null
+})
+
+const serviceTasks = ref<WorkItem[]>([])
+const completingWorkId = ref<string | null>(null)
 
 const showFeedbackDialog = ref(false)
 const submittingFeedback = ref(false)
 const currentOrder = ref<ServiceOrder | null>(null)
 const feedbackContent = ref('')
 const fileList = ref<any[]>([])
+const userStore = useUserStore()
 
 const stats = computed(() => {
   // const all = tasks.value // Legacy tasks removed
@@ -231,11 +250,16 @@ async function fetch() {
       console.log('Orders response:', ordersRes)
       const orders = Array.isArray(ordersRes) ? ordersRes : (ordersRes as any).results || []
       // Filter for staff: pending or processing
-      serviceTasks.value = orders.filter((o: ServiceOrder) => ['pending', 'processing'].includes(o.status))
+      const base: WorkItem[] = orders
+        .filter((o: ServiceOrder) => ['pending', 'processing'].includes(o.status))
+        .map((o: ServiceOrder) => ({ ...(o as any), kind: 'service' }))
+      serviceTasks.value = base
       console.log('Filtered Service Tasks:', serviceTasks.value)
     } catch (e) {
       console.error('Fetch service orders failed:', e)
     }
+
+    await appendCleaningTasks()
 
   } catch (error: any) {
     console.error('Fetch dashboard data failed:', error)
@@ -248,9 +272,86 @@ async function fetch() {
   }
 }
 
+const isCleaner = computed(() => {
+  const u: any = userStore.user
+  const pos = String(u?.staff_info?.position || u?.position || (userStore.profile as any)?.position || '')
+  return pos.includes('保洁') || pos.includes('清洁') || pos.toLowerCase().includes('clean')
+})
+
+const currentStaffId = computed(() => {
+  const u: any = userStore.user
+  return u?.staff_info?.id || u?.id || null
+})
+
+async function appendCleaningTasks() {
+  if (!isCleaner.value) return
+  const staffId = currentStaffId.value
+  if (!staffId) return
+  try {
+    const tasks = await getTasks(String(staffId))
+    const getLocalYMD = (d: Date) => {
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    const today = getLocalYMD(new Date())
+
+    const cleaning = tasks
+      .filter((t: any) => {
+        const isCleaning = t.type === 'bed_scheduling' && (String(t.title || '').includes('保洁') || String(t.description || '').includes('清理'))
+        if (!isCleaning) return false
+        
+        if (t.status !== 'completed') return true
+        
+        // 只显示今天完成的任务
+        if (t.completed_at) {
+          return getLocalYMD(new Date(t.completed_at)) === today
+        }
+        // 如果没有完成时间，回退到截止日期
+        if (t.due_date) {
+          return t.due_date === today
+        }
+        return false
+      })
+      .map((t: any) => {
+        const status = t.status === 'in_progress' ? 'processing' : (t.status === 'completed' ? 'completed' : 'pending')
+        return {
+          kind: 'cleaning',
+          id: t.id,
+          patient_name: t.patient?.name || '',
+          status,
+          items: [{ id: `clean-${t.id}`, service_name: '床位打扫' }],
+          due_date: t.due_date,
+          due_time: t.due_time ?? null
+        } as WorkItem
+      })
+    serviceTasks.value = [...serviceTasks.value, ...cleaning]
+  } catch (e) {
+    console.error('Fetch cleaning tasks failed:', e)
+  }
+}
+
+async function completeCleaningTask(task: any) {
+  if (task.status === 'completed') return
+  completingWorkId.value = String(task.id)
+  try {
+    await completeTask(String(task.id))
+    task.status = 'completed'
+    ElMessage.success('任务已完成')
+    await fetch()
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('完成任务失败')
+  } finally {
+    completingWorkId.value = null
+  }
+}
+
 // Service Task Actions
-const handleProcess = async (order: ServiceOrder) => {
-  currentOrder.value = order
+const handleProcess = async (order: any) => {
+  if (order?.kind !== 'service') return
+  currentOrder.value = order as ServiceOrder
   // If pending, mark as processing first (optional, or just go straight to feedback)
   if (order.status === 'pending') {
     try {
@@ -303,6 +404,24 @@ const submitFeedback = async () => {
 const formatDate = (dateStr: string) => {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleString()
+}
+
+const formatWorkTime = (task: any) => {
+  if (task.kind === 'service') return formatDate(task.paid_at)
+  if (!task.due_date) return ''
+  return task.due_time ? `${task.due_date} ${task.due_time}` : task.due_date
+}
+
+const workStatusText = (task: any) => {
+  if (task.status === 'completed') return '已完成'
+  if (task.status === 'processing') return '进行中'
+  return '待处理'
+}
+
+const workStatusTag = (task: any) => {
+  if (task.status === 'completed') return 'success'
+  if (task.status === 'processing') return 'success'
+  return 'warning'
 }
 </script>
 

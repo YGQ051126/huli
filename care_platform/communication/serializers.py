@@ -19,3 +19,6 @@ class MessageCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
         return Message.objects.create(sender=user, **validated_data)
+
+    def to_representation(self, instance):
+        return MessageSerializer(instance).data

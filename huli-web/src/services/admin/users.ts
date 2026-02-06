@@ -17,7 +17,7 @@ export async function createUser(payload: Partial<User> & { password?: string })
 }
 
 export async function updateUser(id: string, payload: Partial<User>): Promise<User> {
-  const res = await api.put(`/users/${id}/`, payload)
+  const res = await api.patch(`/users/${id}/`, payload)
   return res as unknown as User
 }
 

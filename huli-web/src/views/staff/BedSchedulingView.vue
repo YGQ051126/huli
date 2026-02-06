@@ -90,7 +90,6 @@ import {
   assignBed,
   matchBed,
   updateBedStatus,
-  getAllocationHistory,
   generateAllocationForm,
   type BedStatus,
   type MatchBedData,
@@ -147,15 +146,6 @@ async function handleRefresh(filters: any) {
     console.log('Fetching bed status with filters:', filters)
     status.value = await getBedStatus(undefined, undefined, filters.status)
     console.log('Bed status loaded:', status.value)
-    
-    if (bedPanelRef.value) {
-      try {
-        const history = await getAllocationHistory()
-        bedPanelRef.value.setHistory(history)
-      } catch (historyError) {
-        console.error('获取床位分配历史失败(不影响床位状态展示):', historyError)
-      }
-    }
   } catch (error) {
     console.error('获取床位状态失败:', error)
     const errMsg = String((error as any)?.message || error || '')

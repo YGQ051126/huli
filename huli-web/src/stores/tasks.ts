@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, readonly } from 'vue'
-import type { CareTask } from '@/types/task'
-import { getTasks, completeTask, delayTask } from '@/services/tasks'
+import { getTasks, completeTask, delayTask, type BackendTask } from '@/services/tasks'
 
 export const useTasksStore = defineStore('tasks', () => {
-  const list = ref<CareTask[]>([])
+  const list = ref<BackendTask[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 

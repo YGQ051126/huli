@@ -19,7 +19,7 @@ export async function getPatients(): Promise<Patient[]> {
 export async function createPatient(patientData: Omit<Patient, 'id' | 'created_at' | 'updated_at'>): Promise<Patient> {
   const store = useUserStore()
   const role = store.userRole
-  const path = role === 'admin' || role === 'staff' ? '/api/v1/admin/elderly/' : '/api/v1/family/elderly/'
+  const path = role === 'admin' || role === 'staff' ? '/admin/elderly/' : '/family/elderly/'
   const res = await api.post(path, patientData)
   return res as unknown as Patient
 }
@@ -27,7 +27,7 @@ export async function createPatient(patientData: Omit<Patient, 'id' | 'created_a
 export async function updatePatient(id: string, patientData: Partial<Patient>): Promise<Patient> {
   const store = useUserStore()
   const role = store.userRole
-  const path = role === 'admin' || role === 'staff' ? '/api/v1/admin/elderly/' : '/api/v1/family/elderly/'
+  const path = role === 'admin' || role === 'staff' ? '/admin/elderly/' : '/family/elderly/'
   const res = await api.put(`${path}${id}/`, patientData)
   return res as unknown as Patient
 }

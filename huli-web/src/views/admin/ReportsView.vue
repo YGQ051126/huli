@@ -16,7 +16,6 @@
                 class="filter-item"
               >
                 <el-option label="月度护理记录" value="monthly-care" />
-                <el-option label="床位使用状况" value="bed-usage" />
                 <el-option label="财务收支统计" value="finance" />
               </el-select>
               <el-date-picker 
@@ -100,14 +99,7 @@
                 >
                   导出Excel
                 </el-button>
-                <el-button 
-                  type="warning" 
-                  @click="exportReport('pdf')"
-                  :icon="Printer"
-                  class="export-btn"
-                >
-                  导出PDF
-                </el-button>
+<!-- PDF Export Removed -->
                 <el-button 
                   type="info" 
                   @click="saveReport"
@@ -239,7 +231,7 @@
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import * as echarts from 'echarts';
-import { TrendCharts, Document, Clock, Calendar, Search, Download, Delete, Printer } from '@element-plus/icons-vue';
+import { TrendCharts, Document, Clock, Calendar, Search, Download, Delete } from '@element-plus/icons-vue';
 import api from '@/services/api';
 
 interface ReportColumn {
@@ -346,7 +338,6 @@ const getReportTitle = (type: string, date: string) => {
   const dateStr = date || '当期';
   const typeMap: Record<string, string> = {
     'monthly-care': '月度护理记录报表',
-    'bed-usage': '床位使用状况报表',
     'finance': '财务收支统计报表'
   };
   return `${dateStr} - ${typeMap[type] || '综合报表'}`;
@@ -359,14 +350,6 @@ const getReportColumns = (type: string): ReportColumn[] => {
         { prop: 'elderlyName', label: '老人姓名', minWidth: 120 },
         { prop: 'totalRecords', label: '护理记录数', minWidth: 120, sortable: true },
         { prop: 'notes', label: '备注' }
-      ];
-    case 'bed-usage':
-      return [
-        { prop: 'roomNumber', label: '房间号', minWidth: 100, sortable: true },
-        { prop: 'bedNumber', label: '床位号', minWidth: 100 },
-        { prop: 'occupancyRate', label: '占用状态', minWidth: 120 },
-        { prop: 'status', label: '当前状态', minWidth: 120 },
-        { prop: 'patientName', label: '入住老人' }
       ];
     case 'finance':
       return [
@@ -393,9 +376,6 @@ const initChart = () => {
     if (reportType.value === 'monthly-care') {
         xAxisData = data.map((item: any) => item.elderlyName);
         seriesData = data.map((item: any) => item.totalRecords);
-    } else if (reportType.value === 'bed-usage') {
-        xAxisData = data.map((item: any) => `${item.roomNumber}-${item.bedNumber}`);
-        seriesData = data.map((item: any) => item.status === '已入住' ? 1 : 0);
     } else if (reportType.value === 'finance') {
         xAxisData = data.map((item: any) => `${item.date}\n${item.item}`);
         seriesData = data.map((item: any) => item.amount);
@@ -455,14 +435,53 @@ const getChartTitle = (type: string): string => {
   const titles: Record<string, string> = {
     'monthly-care': '月度护理记录趋势',
     'health-status': '健康状况变化趋势',
-    'bed-usage': '床位使用率变化',
     'finance': '财务收支对比'
   };
   return titles[type] || '数据趋势';
 };
 
-const exportReport = (format: 'excel' | 'pdf') => {
+const exportReport = async (format: 'excel' | 'pdf') => {
+  if (format === 'pdf') {
+    ElMessage.warning('PDF导出功能暂未开放');
+    return;
+  }
+  
   ElMessage.success(`正在导出${format === 'excel' ? 'Excel' : 'PDF'}格式报表`);
+  
+  try {
+    const response = await api.get('/admin/reports/export/', {
+      params: {
+        type: reportType.value,
+        month: reportDate.value || undefined
+      },
+      responseType: 'blob'
+    });
+    
+    // Create blob link to download
+    // Api interceptor returns response.data directly if it doesn't have {code, data} structure
+    // So response is the Blob object here
+    const blob = new Blob([response as any], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Filename logic
+    const dateStr = reportDate.value || 'all';
+    const filename = `report_${reportType.value}_${dateStr}.xlsx`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    ElMessage.success('导出成功');
+  } catch (error) {
+    console.error('Export failed', error);
+    ElMessage.error('导出失败');
+  }
 };
 
 const saveReport = () => {
@@ -547,7 +566,6 @@ const getReportTypeTag = (type: string): string => {
   const tags: Record<string, string> = {
     'monthly-care': 'primary',
     'health-status': 'success',
-    'bed-usage': 'warning',
     'finance': 'danger'
   };
   return tags[type] || 'info';
@@ -557,7 +575,6 @@ const getReportTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
     'monthly-care': '护理记录',
     'health-status': '健康分析',
-    'bed-usage': '床位使用',
     'finance': '财务统计'
   };
   return labels[type] || type;

@@ -22,6 +22,10 @@ urlpatterns = [
     path('assignments/', views.BedAssignmentViewSet.as_view({'get': 'list', 'post': 'create'}), name='bed-assignment-list'),
     path('assignments', views.BedAssignmentViewSet.as_view({'get': 'list', 'post': 'create'})),
     
+    # Add form download URL
+    path('assignments/<str:pk>/form/', views.BedAssignmentViewSet.as_view({'get': 'form'}), name='bed-assignment-form'),
+    path('assignments/<str:pk>/form', views.BedAssignmentViewSet.as_view({'get': 'form'})),
+    
     path('beds/<str:id>/set_status/', views.BedViewSet.as_view({'patch': 'set_status'}), name='bed-set-status'),
     path('beds/<str:id>/set_status', views.BedViewSet.as_view({'patch': 'set_status'})),
     

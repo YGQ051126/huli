@@ -1,20 +1,24 @@
 <template>
   <div class="staff-messages-view">
-    <el-page-header content="在线沟通" />
+    <div class="page-header-wrapper">
+      <el-page-header content="在线沟通" icon="" title="工作台" />
+    </div>
 
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="8">
-        <el-card>
+    <div class="layout-container">
+      <!-- Left Sidebar: Family Selector -->
+      <aside class="sidebar">
+        <el-card class="sidebar-card" shadow="hover">
           <template #header>
-            <span>选择家属</span>
+            <div class="card-header">
+              <span>选择家属</span>
+            </div>
           </template>
           
-          <!-- 家属用户选择器 -->
           <div class="family-selector">
             <el-select
               v-model="receiverId"
-              placeholder="请选择家属用户"
-              style="width: 100%; margin-bottom: 8px"
+              placeholder="搜索或选择家属..."
+              class="custom-select"
               clearable
               filterable
               :loading="loadingFamilies"
@@ -35,34 +39,48 @@
             
             <el-button 
               type="primary" 
-              size="small" 
+              class="load-btn"
               @click="fetch" 
               :disabled="!receiverId"
-              style="width: 100%"
+              round
             >
               加载消息
             </el-button>
           </div>
-          
-          <!-- 当前选择的家属信息 -->
-          <div v-if="receiverName" class="selected-family-info">
-            <el-divider />
-            <p>当前沟通对象：<strong>{{ receiverName }}</strong></p>
-            <p>用户ID：<code>{{ receiverId }}</code></p>
-          </div>
-          
         </el-card>
-      </el-col>
+      </aside>
       
-      <el-col :span="16">
+      <!-- Main Content: Chat Panel -->
+      <main class="main-content">
         <CommunicationPanel
           :messages="messages"
           :loading="loading"
           :receiver-id="receiverId"
           @send="handleSend"
         />
-      </el-col>
-    </el-row>
+      </main>
+
+      <!-- Right Aux Panel: Info (Only visible on large screens) -->
+      <aside class="aux-panel" v-if="receiverId">
+        <el-card class="info-card" shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <span>当前会话</span>
+            </div>
+          </template>
+          <div class="user-info-detail">
+            <el-avatar :size="64" class="info-avatar">{{ (receiverName || 'U').charAt(0).toUpperCase() }}</el-avatar>
+            <h3 class="info-name">{{ receiverName }}</h3>
+            <p class="info-id">ID: {{ receiverId }}</p>
+            <el-divider />
+            <div class="info-meta">
+              <p>状态: <span class="status-online">在线</span></p>
+              <p>角色: 家属</p>
+            </div>
+          </div>
+        </el-card>
+      </aside>
+    </div>
   </div>
 </template>
 
@@ -87,68 +105,26 @@ const loadingFamilies = ref(false)
 async function loadFamilyUsers() {
   loadingFamilies.value = true
   try {
-    console.log('=== 开始加载家属用户列表 ===')
-    console.log('当前用户token:', localStorage.getItem('access_token'))
-    console.log('当前用户认证状态:', authStore.isAuthenticated)
-    console.log('当前用户信息:', authStore.user)
-    
-    // 先尝试通过family-users API获取
-    console.log('尝试调用getFamilyUsers...')
     let users = await getFamilyUsers()
-    console.log('getFamilyUsers返回结果:', users)
-    console.log('getFamilyUsers返回用户数:', users.length)
-    
-    // 如果获取失败或返回为空，尝试备用方案
     if (!users || users.length === 0) {
-      console.log('主要方法返回空，尝试备用方案getAllUsersAndFilterFamily...')
       users = await getAllUsersAndFilterFamily()
-      console.log('备用方案返回结果:', users)
-      console.log('备用方案返回用户数:', users.length)
     }
-    
     familyUsers.value = users
-    console.log('最终设置的用户列表:', familyUsers.value)
-    console.log('最终设置的用户数:', familyUsers.value.length)
-    
-    if (users.length === 0) {
-      console.warn('没有获取到任何家属用户数据')
-      ElMessage.warning('暂无家属用户数据，请检查网络连接或联系管理员')
-    } else {
-      console.log('? 成功加载家属用户数据')
-      ElMessage.success(`成功加载 ${users.length} 个家属用户`)
-    }
   } catch (error: any) {
-    console.error('? 加载家属用户失败:', error)
-    console.error('错误详情:', error)
-    ElMessage.error('加载家属用户失败: ' + (error.message || '未知错误'))
-    
-    // 显示更详细的错误信息
-    if (error.response) {
-      console.error('响应错误:', error.response.data)
-      console.error('状态码:', error.response.status)
-      console.error('响应头:', error.response.headers)
-    } else if (error.request) {
-      console.error('请求错误:', error.request)
-    } else {
-      console.error('配置错误:', error.message)
-    }
-    console.error('错误配置:', error.config)
+    console.error('加载家属用户失败:', error)
+    ElMessage.error('加载家属用户失败')
   } finally {
     loadingFamilies.value = false
-    console.log('=== 家属用户加载完成 ===')
   }
 }
 
 // 处理家属选择变化
 function handleFamilyChange(value: string) {
-  // 切换用户时立即清空消息列表，避免显示上一位用户的消息
   messages.value = []
-  
   if (value) {
     const selectedUser = familyUsers.value.find(user => String(user.id) === value)
     if (selectedUser) {
       receiverName.value = selectedUser.real_name || selectedUser.username
-      // 自动加载消息
       fetch()
     }
   } else {
@@ -169,7 +145,6 @@ async function fetch() {
     }
   } catch (error) {
     ElMessage.error('加载消息失败')
-    console.error('Failed to load messages:', error)
   } finally {
     loading.value = false
   }
@@ -187,39 +162,102 @@ async function handleSend(data: CreateMessageData) {
     ElMessage.success('消息已发送')
   } catch (error) {
     ElMessage.error('发送消息失败')
-    console.error('Failed to send message:', error)
   }
 }
 
 // 初次加载家属用户列表
 onMounted(() => {
-  console.log('MessagesView组件挂载完成')
-  console.log('当前路由:', window.location.href)
-  console.log('localStorage中的token:', localStorage.getItem('access_token'))
-  console.log('当前用户认证状态:', authStore.isAuthenticated)
-  console.log('当前用户信息:', authStore.user)
-  
-  // 检查是否有token和用户认证
   if (!authStore.isAuthenticated) {
-    console.warn('用户未认证，请先登录')
-    ElMessage.warning('请先登录系统')
     return
   }
-  
-  console.log('开始加载家属用户列表...')
   loadFamilyUsers()
 })
 </script>
 
 <style scoped>
 .staff-messages-view {
-  padding: 16px;
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #303133;
 }
 
+.page-header-wrapper {
+  margin-bottom: 24px;
+}
+
+/* Layout Grid */
+.layout-container {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Large Screens: 3 Columns */
+@media (min-width: 1200px) {
+  .layout-container {
+    grid-template-columns: 240px 1fr 280px;
+  }
+}
+
+/* Medium Screens: 2 Columns (Hide Aux) */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .layout-container {
+    grid-template-columns: 240px 1fr;
+  }
+  .aux-panel {
+    display: none;
+  }
+}
+
+/* Small Screens: 1 Column (Sidebar stacked) */
+@media (max-width: 991px) {
+  .layout-container {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    margin-bottom: 16px;
+  }
+  .aux-panel {
+    display: none;
+  }
+}
+
+/* Card Styles */
+.sidebar-card, .info-card {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.card-header {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Sidebar Components */
 .family-selector {
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
+.custom-select {
+  width: 100%;
+}
+
+.load-btn {
+  width: 100%;
+  transition: all 0.2s ease-out;
+}
+
+.load-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+}
+
+/* User Option */
 .user-option {
   display: flex;
   justify-content: space-between;
@@ -228,6 +266,7 @@ onMounted(() => {
 
 .user-name {
   font-weight: 500;
+  color: #303133;
 }
 
 .user-username {
@@ -235,20 +274,49 @@ onMounted(() => {
   font-size: 12px;
 }
 
-.selected-family-info {
-  margin-top: 16px;
+/* Aux Panel Info */
+.user-info-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+}
+
+.info-avatar {
+  background-color: #E6A23C;
+  font-size: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(230, 162, 60, 0.3);
+}
+
+.info-name {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.info-id {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  color: #909399;
+  font-size: 14px;
+}
+
+.info-meta {
+  width: 100%;
+  text-align: left;
   font-size: 14px;
   color: #606266;
 }
 
-.selected-family-info strong {
-  color: #303133;
+.info-meta p {
+  margin: 8px 0;
+  display: flex;
+  justify-content: space-between;
 }
 
-.selected-family-info code {
-  background-color: #f4f4f5;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 12px;
+.status-online {
+  color: #67C23A;
+  font-weight: 500;
 }
 </style>

@@ -1,80 +1,72 @@
 <template>
   <div class="schedule-view">
-    <el-tabs v-model="activeTab" class="schedule-tabs">
-      <el-tab-pane label="工作日程" name="schedule">
-        <el-empty description="暂未集成排班接口" />
-      </el-tab-pane>
-      
-      <el-tab-pane label="请假管理" name="leave">
-        <div class="leave-content">
-          <div class="page-header">
-            <div class="header-left">
-              <h2 class="section-title">我的请假申请</h2>
-            </div>
-            <div class="header-right">
-              <el-button type="primary" :icon="Plus" @click="showApplyDialog">申请请假</el-button>
-            </div>
-          </div>
-          
-          <el-table :data="leaveRequests" v-loading="loading" stripe border style="width: 100%">
-            <el-table-column prop="type" label="请假类型" width="120">
-              <template #default="scope">
-                <el-tag :type="getLeaveTypeTag(scope.row.type)">
-                  {{ getLeaveTypeLabel(scope.row.type) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            
-            <el-table-column prop="start_date" label="开始日期" width="120" sortable />
-            <el-table-column prop="end_date" label="结束日期" width="120" sortable />
-            
-            <el-table-column label="天数" width="80">
-              <template #default="scope">
-                {{ calculateDays(scope.row.start_date, scope.row.end_date) }}天
-              </template>
-            </el-table-column>
-            
-            <el-table-column prop="reason" label="请假原因" min-width="200" show-overflow-tooltip />
-            
-            <el-table-column prop="status" label="状态" width="100">
-              <template #default="scope">
-                <el-tag :type="getStatusType(scope.row.status)">
-                  {{ getStatusLabel(scope.row.status) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            
-            <el-table-column label="审批意见" min-width="150" show-overflow-tooltip>
-              <template #default="scope">
-                <span v-if="scope.row.rejection_reason" class="text-danger">{{ scope.row.rejection_reason }}</span>
-                <span v-else-if="scope.row.status === 'approved'" class="text-success">已批准</span>
-                <span v-else>-</span>
-              </template>
-            </el-table-column>
-            
-            <el-table-column prop="created_at" label="申请时间" width="160" sortable>
-              <template #default="scope">
-                {{ formatDate(scope.row.created_at) }}
-              </template>
-            </el-table-column>
-            
-             <el-table-column label="操作" width="100" fixed="right">
-              <template #default="scope">
-                <el-button 
-                  v-if="scope.row.status === 'pending'"
-                  type="danger" 
-                  link
-                  size="small"
-                  @click="handleCancel(scope.row)"
-                >
-                  撤销
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+    <div class="leave-content">
+      <div class="page-header">
+        <div class="header-left">
+          <h2 class="section-title">我的请假申请</h2>
         </div>
-      </el-tab-pane>
-    </el-tabs>
+        <div class="header-right">
+          <el-button type="primary" :icon="Plus" @click="showApplyDialog">申请请假</el-button>
+        </div>
+      </div>
+      
+      <el-table :data="leaveRequests" v-loading="loading" stripe border style="width: 100%">
+        <el-table-column prop="type" label="请假类型" width="120">
+          <template #default="scope">
+            <el-tag :type="getLeaveTypeTag(scope.row.type)">
+              {{ getLeaveTypeLabel(scope.row.type) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="start_date" label="开始日期" width="120" sortable />
+        <el-table-column prop="end_date" label="结束日期" width="120" sortable />
+        
+        <el-table-column label="天数" width="80">
+          <template #default="scope">
+            {{ calculateDays(scope.row.start_date, scope.row.end_date) }}天
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="reason" label="请假原因" min-width="200" show-overflow-tooltip />
+        
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="scope">
+            <el-tag :type="getStatusType(scope.row.status)">
+              {{ getStatusLabel(scope.row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="审批意见" min-width="150" show-overflow-tooltip>
+          <template #default="scope">
+            <span v-if="scope.row.rejection_reason" class="text-danger">{{ scope.row.rejection_reason }}</span>
+            <span v-else-if="scope.row.status === 'approved'" class="text-success">已批准</span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="created_at" label="申请时间" width="160" sortable>
+          <template #default="scope">
+            {{ formatDate(scope.row.created_at) }}
+          </template>
+        </el-table-column>
+        
+         <el-table-column label="操作" width="100" fixed="right">
+          <template #default="scope">
+            <el-button 
+              v-if="scope.row.status === 'pending'"
+              type="danger" 
+              link
+              size="small"
+              @click="handleCancel(scope.row)"
+            >
+              撤销
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <!-- 申请请假对话框 -->
     <el-dialog
@@ -134,7 +126,6 @@ import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { getLeaveRequests, createLeaveRequest, cancelLeaveRequest, type LeaveRequest } from '@/services/staff/leave'
 import dayjs from 'dayjs'
 
-const activeTab = ref('leave') // Default to leave tab for this task
 const loading = ref(false)
 const leaveRequests = ref<LeaveRequest[]>([])
 const dialogVisible = ref(false)

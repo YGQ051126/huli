@@ -4,6 +4,7 @@ export interface Message {
   id: number
   sender: number
   sender_name?: string
+  sender_avatar?: string
   receiver: number
   receiver_name?: string
   type: 'text' | 'voice' | 'image' | 'system'

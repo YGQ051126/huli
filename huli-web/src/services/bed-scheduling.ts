@@ -163,5 +163,8 @@ export async function generateAllocationForm(assignmentId: string): Promise<Blob
   const res = await api.get(`/bed_scheduling/assignments/${assignmentId}/form/`, {
     responseType: 'blob'
   })
+  // Handle case where API wrapper might wrap response
+  // If api wrapper returns data directly for blob, it's fine.
+  // But our api wrapper (axios) returns response.data
   return res as unknown as Blob
 }

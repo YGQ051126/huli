@@ -5,11 +5,24 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from typing import Any
 import logging
-from django.db import connection
+from django.conf import settings
+from django.db import connection, transaction, models
 from django.db.utils import OperationalError
 from utils.permissions import IsStaffUser, IsAdminUser
 from utils.response import success_response, error_response
 from rooms.models import Room
+from patients.models import Patient
+from .models import BedAssignment
+from users.models import StaffUser
+from tasks.models import Task as WorkTask, TaskAssignment
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+from django.http import HttpResponse
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 
 logger = logging.getLogger(__name__)
 
@@ -224,16 +237,45 @@ class BedViewSet(viewsets.ViewSet):
             new_status = request.data.get('status')
             
             if new_status == 'available':
-                # 释放床位：清空对应的 bedX 字段
                 field_name = f'bed{bed_index}'
-                if hasattr(room, field_name):
+                if not hasattr(room, field_name):
+                    return error_response(code=400, message=f"无效的床位索引: {bed_index}")
+
+                room_number = str(room.room_number)
+                bed_id = str(bed_index)
+
+                with transaction.atomic():
+                    # 释放床位：清空对应的 bedX 字段
                     setattr(room, field_name, '')
                     room.save()
+
+                    # 查找并结束关联的分配记录
+                    active_assignments = BedAssignment.objects.filter(
+                        room=room,
+                        bed_number=str(bed_index),
+                        status='active'
+                    )
                     
-                    self._log_api_response(request, action_name="set_status", status_code=200, data_preview="Bed released")
-                    return success_response(message="床位已释放")
-                else:
-                    return error_response(code=400, message=f"无效的床位索引: {bed_index}")
+                    for assignment in active_assignments:
+                        assignment.status = 'completed'
+                        assignment.release_date = timezone.now()
+                        assignment.save()
+                        
+                        # 更新老人信息
+                        if assignment.elderly:
+                            assignment.elderly.room = None
+                            assignment.elderly.bed_id = None
+                            assignment.elderly.save()
+
+                    # 同步清空院民床位信息，避免 patients_patient.bed_id 仍残留
+                    (
+                        Patient.objects
+                        .filter(room=room_number, bed_id=bed_id)
+                        .update(room=None, bed_id=None)
+                    )
+
+                self._log_api_response(request, action_name="set_status", status_code=200, data_preview="Bed released")
+                return success_response(message="床位已释放")
             else:
                 # 暂时只支持释放（变为空闲），暂不支持直接设置为 occupied（需通过分配流程）
                 return error_response(code=400, message="目前仅支持释放床位（status=available）")
@@ -252,6 +294,198 @@ class BedAssignmentViewSet(viewsets.ViewSet):
 
     def create(self, request):
         """创建分配"""
-        # TODO: 实现分配逻辑
-        return success_response(message="暂未实现")
+        try:
+            elderly_id = request.data.get('elderlyId')
+            bed_id = request.data.get('bedId')
+            assign_date = request.data.get('assignDate')
+            
+            if not elderly_id or not bed_id:
+                return error_response(code=400, message="缺少必要参数")
 
+            room_pk, bed_index = bed_id.split('-')
+
+            try:
+                patient = Patient.objects.get(pk=elderly_id)
+            except Patient.DoesNotExist:
+                return error_response(code=404, message="Elderly not found")
+
+            dt = None
+            if isinstance(assign_date, str) and assign_date:
+                dt = parse_datetime(assign_date)
+            if dt is None:
+                dt = timezone.now()
+
+            if settings.USE_TZ:
+                if timezone.is_naive(dt):
+                    dt = timezone.make_aware(dt, timezone.get_current_timezone())
+            else:
+                if timezone.is_aware(dt):
+                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
+
+            with transaction.atomic():
+                room = Room.objects.select_for_update().get(pk=room_pk)
+                elderly_name = patient.name
+                field_name = f'bed{bed_index}'
+                setattr(room, field_name, elderly_name)
+                room.save()
+
+                # 更新老人床位信息
+                patient.room = room.room_number
+                patient.bed_id = str(bed_index)
+                patient.save()
+
+                assignment = BedAssignment.objects.create(
+                    elderly=patient,
+                    room=room,
+                    bed_number=str(bed_index),
+                    assigned_by=request.user,
+                    assign_date=dt,
+                    status='active',
+                    cleaning_notified=False
+                )
+
+                cleaning_staff = list(
+                    StaffUser.objects.select_related('user').filter(
+                        models.Q(position__icontains='保洁')
+                        | models.Q(position__icontains='清洁')
+                        | models.Q(position__icontains='clean')
+                        | models.Q(user__position__icontains='保洁')
+                        | models.Q(user__position__icontains='清洁')
+                        | models.Q(user__position__icontains='clean')
+                    )
+                )
+                created_task_count = 0
+                for staff_user in cleaning_staff:
+                    task = WorkTask.objects.create(
+                        type='bed_scheduling',
+                        title=f'保洁：清理房间{room.room_number}床位{bed_index}',
+                        description=f'为院民 {patient.name} 分配床位后，请清理房间 {room.room_number} 的床位 {bed_index}。',
+                        staff=staff_user,
+                        patient=patient,
+                        due_date=dt.date(),
+                        status='pending',
+                        priority='high',
+                        created_by=request.user
+                    )
+                    TaskAssignment.objects.create(task=task, staff=staff_user, assigned_by=request.user)
+                    created_task_count += 1
+
+                if created_task_count > 0:
+                    assignment.cleaning_notified = True
+                    assignment.save(update_fields=['cleaning_notified'])
+            
+            # 3. 构造返回数据
+            assignment_data = {
+                'id': str(assignment.pk),
+                'elderlyId': str(patient.pk),
+                'elderlyName': patient.name,
+                'bedId': bed_id,
+                'roomNumber': room.room_number,
+                'bedNumber': str(bed_index),
+                'assignDate': assignment.assign_date.isoformat(),
+                'status': assignment.status,
+                'cleaningNotified': assignment.cleaning_notified,
+                'createdAt': assignment.created_at.isoformat()
+            }
+            return success_response(data=assignment_data)
+        except Exception as e:
+            logger.exception("Error assigning bed")
+            return error_response(code=500, message=str(e))
+
+    @action(detail=True, methods=['get'])
+    def form(self, request, pk=None):
+        """生成并下载床位分配单"""
+        try:
+            assignment = BedAssignment.objects.get(pk=pk)
+
+            try:
+                pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+            except Exception:
+                pass
+
+            buffer = BytesIO()
+            c = canvas.Canvas(buffer, pagesize=A4)
+            width, height = A4
+
+            c.setFont('STSong-Light', 16)
+            c.drawString(50, height - 60, '床位分配单')
+
+            c.setFont('STSong-Light', 11)
+            y = height - 90
+
+            def write_line(label: str, value: str) -> None:
+                nonlocal y
+                c.drawString(50, y, f'{label}：{value}')
+                y -= 18
+
+            def fmt_dt(dt_value) -> str:
+                if not dt_value:
+                    return ''
+                if settings.USE_TZ and timezone.is_aware(dt_value):
+                    dt_value = dt_value.astimezone(timezone.get_current_timezone())
+                return dt_value.strftime('%Y-%m-%d %H:%M:%S')
+
+            def fmt_date(dt_value) -> str:
+                if not dt_value:
+                    return ''
+                if settings.USE_TZ and timezone.is_aware(dt_value):
+                    dt_value = dt_value.astimezone(timezone.get_current_timezone())
+                return dt_value.strftime('%Y-%m-%d')
+
+            assigned_by_name = ''
+            if assignment.assigned_by:
+                assigned_by_name = getattr(assignment.assigned_by, 'real_name', '') or getattr(assignment.assigned_by, 'username', '') or ''
+
+            gender_display = ''
+            gender_fn = getattr(assignment.elderly, 'get_gender_display', None)
+            if callable(gender_fn):
+                try:
+                    gender_display = gender_fn()
+                except Exception:
+                    gender_display = ''
+            if not gender_display:
+                gender_display = getattr(assignment.elderly, 'gender', '') or ''
+
+            write_line('分配单号', str(assignment.pk))
+            write_line('生成时间', fmt_dt(assignment.created_at))
+            y -= 6
+
+            c.setFont('STSong-Light', 12)
+            c.drawString(50, y, '老人信息')
+            y -= 18
+            c.setFont('STSong-Light', 11)
+            write_line('老人ID', str(assignment.elderly.pk))
+            write_line('姓名', getattr(assignment.elderly, 'name', '') or '')
+            write_line('性别', str(gender_display))
+            write_line('年龄', str(getattr(assignment.elderly, 'age', '') or ''))
+            y -= 6
+
+            c.setFont('STSong-Light', 12)
+            c.drawString(50, y, '床位信息')
+            y -= 18
+            c.setFont('STSong-Light', 11)
+            write_line('房间号', getattr(assignment.room, 'room_number', '') or '')
+            write_line('床位号', str(assignment.bed_number))
+            write_line('分配日期', fmt_date(assignment.assign_date))
+            y -= 6
+
+            c.setFont('STSong-Light', 12)
+            c.drawString(50, y, '操作信息')
+            y -= 18
+            c.setFont('STSong-Light', 11)
+            write_line('操作人', assigned_by_name or 'System')
+            write_line('清洁已通知', '是' if assignment.cleaning_notified else '否')
+
+            c.showPage()
+            c.save()
+
+            pdf_bytes = buffer.getvalue()
+            buffer.close()
+
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="assignment_{assignment.pk}.pdf"'
+            return response
+        except BedAssignment.DoesNotExist:
+            return error_response(code=404, message="Assignment not found")
+        except Exception as e:
+            return error_response(code=500, message=str(e))

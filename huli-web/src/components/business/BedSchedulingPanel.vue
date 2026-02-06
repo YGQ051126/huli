@@ -4,9 +4,6 @@
       <div class="header">
         <span>床位调度管理面板</span>
         <div class="header-actions">
-          <el-button size="small" @click="showHistory = !showHistory">
-            {{ showHistory ? '隐藏历史' : '查看历史' }}
-          </el-button>
           <el-button size="small" type="primary" @click="openMatchDialog">
             智能匹配
           </el-button>
@@ -60,34 +57,6 @@
         {{ status?.maintenance ?? '-' }}
       </el-descriptions-item>
     </el-descriptions>
-
-    <div v-if="showHistory" class="history-section">
-      <h4>近期床位分配记录</h4>
-      <el-table
-        :data="history"
-        size="small"
-        max-height="200"
-        empty-text="暂无分配记录"
-      >
-        <el-table-column prop="elderlyName" label="院民姓名" width="100" />
-        <el-table-column prop="roomNumber" label="房间号" width="80" />
-        <el-table-column prop="bedNumber" label="床位号" width="80" />
-        <el-table-column prop="assignDate" label="分配日期" width="120">
-          <template #default="scope">
-            {{ formatDate(scope.row.assignDate) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="assignedBy" label="分配人" width="100" />
-        <el-table-column prop="status" label="状态" width="80">
-          <template #default="scope">
-            <el-tag :type="historyStatusType(scope.row.status)" size="small">
-              {{ historyStatusText(scope.row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="notes" label="备注" min-width="150" />
-      </el-table>
-    </div>
 
     <div class="visual-bed-grid">
       <div
@@ -246,7 +215,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { User, Plus } from '@element-plus/icons-vue'
-import type { BedStatus, MatchBedData, BedMatchResult, BedAllocationHistory } from '@/services/bed-scheduling'
+import type { BedStatus, MatchBedData, BedMatchResult } from '@/services/bed-scheduling'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 
 const props = defineProps<{
@@ -272,8 +241,6 @@ const filters = reactive<{
   status: undefined
 })
 
-const showHistory = ref(false)
-const history = ref<BedAllocationHistory[]>([])
 const matchDialogVisible = ref(false)
 const matching = ref(false)
 const matchResult = ref<BedMatchResult | null>(null)
@@ -328,24 +295,6 @@ const statusType = (value: BedStatus['beds'][number]['status']) => {
     maintenance: 'danger'
   } as const
   return map[value] || 'info'
-}
-
-const historyStatusText = (status: BedAllocationHistory['status']) => {
-  const map = {
-    active: '使用中',
-    completed: '已完成',
-    cancelled: '已取消'
-  } as const
-  return map[status] || status
-}
-
-const historyStatusType = (status: BedAllocationHistory['status']) => {
-  const map = {
-    active: 'success',
-    completed: 'info',
-    cancelled: 'danger'
-  } as const
-  return map[status] || 'info'
 }
 
 const formatDate = (date: string) => {
@@ -456,13 +405,8 @@ const setMatchResult = (result: BedMatchResult) => {
   matchResult.value = result
 }
 
-const setHistory = (data: BedAllocationHistory[]) => {
-  history.value = data
-}
-
 defineExpose({
-  setMatchResult,
-  setHistory
+  setMatchResult
 })
 </script>
 
@@ -508,18 +452,6 @@ defineExpose({
 
 .summary.status-maintenance :deep(.el-descriptions__body) {
   color: #f56c6c;
-}
-
-.history-section {
-  margin-bottom: 16px;
-  padding: 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-
-.history-section h4 {
-  margin: 0 0 12px 0;
-  color: #303133;
 }
 
 .visual-bed-grid {

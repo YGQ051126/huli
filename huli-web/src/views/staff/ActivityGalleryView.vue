@@ -2,15 +2,6 @@
   <div class="activity-gallery-view">
     <el-page-header content="活动相册" />
     <el-card style="margin-top: 16px">
-      <!-- 调试信息 -->
-      <div class="debug-info" v-if="showDebug">
-        <el-alert type="info" :closable="false">
-          <p>用户角色: {{ authStore.user?.role }}</p>
-          <p>认证状态: {{ authStore.isAuthenticated }}</p>
-          <p>当前路由: {{ $route.path }}</p>
-        </el-alert>
-      </div>
-      
       <ActivityGalleryManager
         :activities="activities"
         :loading="loading"
@@ -35,7 +26,6 @@ const route = useRoute()
 const router = useRouter()
 const activities = ref<ActivityGallery[]>([])
 const loading = ref(false)
-const showDebug = ref(true) // 显示调试信息
 
 async function fetch() {
   loading.value = true
@@ -82,13 +72,6 @@ onMounted(() => {
 <style scoped>
 .activity-gallery-view {
   padding: 16px;
-}
-.debug-info {
-  margin-bottom: 16px;
-}
-.debug-info p {
-  margin: 4px 0;
-  color: #666;
 }
 </style>
 

@@ -16,6 +16,7 @@ from payments.models import Bill, Payment
 from rooms.models import Room
 from care_records.models import CareRecord
 from notifications.models import Notification
+from services.models import ServiceOrder
 from django.db.models import Sum
 from datetime import datetime
 from django.utils import timezone
@@ -76,22 +77,21 @@ class ApprovalViewSet(ViewSet):
         print(f"User role: {getattr(request.user, 'role', 'unknown')}")
         print(f"Is authenticated: {request.user.is_authenticated}")
         
-        # 注册申请审批 (RegisterApplication)
+        # RegisterApplication
         register_approvals = RegisterApplication.objects.filter(status='pending')
         register_data = RegisterApplicationSerializer(register_approvals, many=True).data
         
-        # 探视预约审批
+        # Visit Appointment
         visit_approvals = Appointment.objects.filter(status='pending', type='visit')
         print(f"Visit approvals count: {visit_approvals.count()}")
         visit_data = AppointmentSerializer(visit_approvals, many=True).data
         
-        # 家属注册审批 (Legacy FamilyUser, maybe remove if RegisterApplication replaces it)
-        # But for now, keeping it if legacy data exists, or just return empty
+        # Family User (Legacy)
         family_approvals = FamilyUser.objects.filter(status='pending')
         print(f"Family approvals count: {family_approvals.count()}")
         family_data = FamilyUserSerializer(family_approvals, many=True).data
         
-        # 员工请假审批
+        # Leave Request
         leave_approvals = LeaveRequest.objects.filter(status='pending')
         print(f"Leave approvals count: {leave_approvals.count()}")
         leave_data = LeaveRequestSerializer(leave_approvals, many=True).data
@@ -108,7 +108,7 @@ class ApprovalViewSet(ViewSet):
         try:
             family_user = FamilyUser.objects.get(pk=pk)
             family_user.status = 'approved'
-            # 同时激活用户账号
+            # Activate user
             family_user.user.status = 'active'
             family_user.user.save()
             family_user.save()
@@ -117,8 +117,8 @@ class ApprovalViewSet(ViewSet):
             Notification.objects.create(
                 user=family_user.user,
                 type='system',
-                title='账号注册审批通过',
-                content=f'尊敬的{family_user.user.real_name}，您的亲属账号注册申请已通过审批，现在可以正常使用了。',
+                title='Account Registration Approved',
+                content=f'Dear {family_user.user.real_name}, your family account registration has been approved. You can now use the system.',
                 related_id=family_user.user.id,
                 related_type='family_user'
             )
@@ -141,8 +141,8 @@ class ApprovalViewSet(ViewSet):
             Notification.objects.create(
                 user=family_user.user,
                 type='system',
-                title='账号注册审批未通过',
-                content=f'尊敬的{family_user.user.real_name}，很遗憾，您的亲属账号注册申请未通过审批。原因：{reason or "无"}。如有疑问请联系管理员。',
+                title='Account Registration Rejected',
+                content=f'Dear {family_user.user.real_name}, your family account registration was rejected. Reason: {reason or "None"}. Please contact admin.',
                 related_id=family_user.user.id,
                 related_type='family_user'
             )
@@ -186,7 +186,7 @@ from django.db.models import Count, Avg
 from care_records.models import CareRecord, DailyCareTask
 
 class ReportViewSet(ViewSet):
-    """统计报表视图集"""
+    """Report ViewSet"""
     permission_classes = [IsAdminUser]
     
     @action(detail=False, methods=['get'])
@@ -197,7 +197,7 @@ class ReportViewSet(ViewSet):
         data = []
         
         if report_type == 'monthly-care':
-            # 1. 优先统计 DailyCareTask (员工端打卡数据)
+            # 1. DailyCareTask
             tasks = DailyCareTask.objects.filter(is_completed=True)
             if month_str:
                 try:
@@ -206,12 +206,12 @@ class ReportViewSet(ViewSet):
                 except ValueError:
                     pass
             
-            # 按老人分组统计
+            # Group by patient
             task_stats = tasks.values('patient__name').annotate(
                 totalTasks=Count('id')
             )
             
-            # 2. 同时也统计 CareRecord (详细护理记录)
+            # 2. CareRecord
             records = CareRecord.objects.all()
             if month_str:
                 try:
@@ -224,7 +224,7 @@ class ReportViewSet(ViewSet):
                 totalRecords=Count('id')
             )
             
-            # 3. 合并数据
+            # 3. Merge
             stats_map = {}
             
             for s in task_stats:
@@ -243,34 +243,9 @@ class ReportViewSet(ViewSet):
                     'elderlyName': name,
                     'totalRecords': total,
                     'averageScore': 'N/A', 
-                    'notes': f"任务打卡:{counts['tasks']}, 详细记录:{counts['records']}"
+                    'notes': f"Tasks:{counts['tasks']}, Records:{counts['records']}"
                 })
                 
-        elif report_type == 'bed-usage':
-            # Room occupancy
-            # Assuming 4 beds per room based on Room model fields (bed1..bed4)
-            # Or checking Patient room/bed assignment
-            rooms = Room.objects.all()
-            active_patients = Patient.objects.filter(status='active')
-            
-            for room in rooms:
-                # Find patients in this room
-                patients_in_room = active_patients.filter(room=room.room_number)
-                
-                # We iterate 1-4 beds
-                for i in range(1, 5):
-                    bed_id = str(i)
-                    p = patients_in_room.filter(bed_id=bed_id).first()
-                    
-                    # Row per bed
-                    data.append({
-                        'roomNumber': room.room_number,
-                        'bedNumber': f"{i}号床",
-                        'occupancyRate': "100%" if p else "0%", # Bed level occupancy is binary
-                        'status': "已入住" if p else "空闲",
-                        'patientName': p.name if p else ''
-                    })
-
         elif report_type == 'finance':
             # Service Order income
             orders = ServiceOrder.objects.filter(status__in=['completed', 'rated'])
@@ -283,10 +258,11 @@ class ReportViewSet(ViewSet):
                     pass
             
             for o in orders:
+                items_name = ", ".join([i.service_name for i in o.items.all()])
                 data.append({
-                    'item': o.service_item.name if o.service_item else '服务费',
+                    'item': items_name if items_name else 'Service Fee',
                     'amount': float(o.total_amount),
-                    'type': '收入',
+                    'type': 'Income',
                     'date': o.paid_at.strftime('%Y-%m-%d') if o.paid_at else o.updated_at.strftime('%Y-%m-%d')
                 })
                 
@@ -322,8 +298,6 @@ class ReportViewSet(ViewSet):
                 self._fill_financial_sheet(ws, month_str)
             elif report_type == 'monthly-care':
                 self._fill_care_sheet(ws, month_str)
-            elif report_type == 'bed-usage':
-                self._fill_bed_usage_sheet(ws)
             else:
                 self._fill_summary_sheet(ws)
             
@@ -335,16 +309,16 @@ class ReportViewSet(ViewSet):
         return response
         
     def _fill_summary_sheet(self, ws):
-        ws.append(['统计报表', datetime.now().strftime('%Y-%m-%d')])
+        ws.append(['Statistical Report', datetime.now().strftime('%Y-%m-%d')])
         ws.append([])
-        ws.append(['项目', '数值', '备注'])
-        ws.append(['在院人数', Patient.objects.filter(status='active').count()])
-        ws.append(['员工总数', StaffUser.objects.count()])
-        ws.append(['待审批请假', LeaveRequest.objects.filter(status='pending').count()])
+        ws.append(['Item', 'Value', 'Note'])
+        ws.append(['Active Elderly', Patient.objects.filter(status='active').count()])
+        ws.append(['Total Staff', StaffUser.objects.count()])
+        ws.append(['Pending Leaves', LeaveRequest.objects.filter(status='pending').count()])
         
     def _fill_financial_sheet(self, ws, month_str=None):
-        ws.append(['财务收支统计报表', datetime.now().strftime('%Y-%m-%d')])
-        ws.append(['日期', '收支类型', '项目名称', '金额 (元)'])
+        ws.append(['Financial Report', datetime.now().strftime('%Y-%m-%d')])
+        ws.append(['Date', 'Type', 'Item Name', 'Amount (CNY)'])
         
         orders = ServiceOrder.objects.filter(status__in=['completed', 'rated'])
         if month_str:
@@ -356,16 +330,17 @@ class ReportViewSet(ViewSet):
         
         for o in orders:
             date_str = o.paid_at.strftime('%Y-%m-%d') if o.paid_at else o.updated_at.strftime('%Y-%m-%d')
+            items_name = ", ".join([i.service_name for i in o.items.all()])
             ws.append([
                 date_str,
-                '收入',
-                o.service_item.name if o.service_item else '服务费',
+                'Income',
+                items_name if items_name else 'Service Fee',
                 float(o.total_amount)
             ])
             
     def _fill_care_sheet(self, ws, month_str=None):
-        ws.append(['月度护理记录报表', datetime.now().strftime('%Y-%m-%d')])
-        ws.append(['老人姓名', '护理记录数 (详细+打卡)', '详细记录数', '任务打卡数', '备注'])
+        ws.append(['Monthly Care Report', datetime.now().strftime('%Y-%m-%d')])
+        ws.append(['Elderly Name', 'Total Records', 'Detailed Records', 'Tasks', 'Note'])
         
         # Logic same as data()
         tasks = DailyCareTask.objects.filter(is_completed=True)
@@ -400,25 +375,5 @@ class ReportViewSet(ViewSet):
                 total,
                 counts['records'],
                 counts['tasks'],
-                f"任务打卡:{counts['tasks']}, 详细记录:{counts['records']}"
+                f"Tasks:{counts['tasks']}, Records:{counts['records']}"
             ])
-
-    def _fill_bed_usage_sheet(self, ws):
-        ws.append(['床位使用状况报表', datetime.now().strftime('%Y-%m-%d')])
-        ws.append(['房间号', '床位号', '占用状态', '当前状态', '入住老人'])
-        
-        rooms = Room.objects.all()
-        active_patients = Patient.objects.filter(status='active')
-        
-        for room in rooms:
-            patients_in_room = active_patients.filter(room=room.room_number)
-            for i in range(1, 5):
-                bed_id = str(i)
-                p = patients_in_room.filter(bed_id=bed_id).first()
-                ws.append([
-                    room.room_number,
-                    f"{i}号床",
-                    "100%" if p else "0%",
-                    "已入住" if p else "空闲",
-                    p.name if p else ''
-                ])

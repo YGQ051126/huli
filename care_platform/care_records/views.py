@@ -282,9 +282,22 @@ class DailyCareTaskViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaffUser]
 
     def get_queryset(self):
-        # Default to today's tasks
-        today = timezone.now().date()
-        return DailyCareTask.objects.filter(task_date=today)
+        queryset = DailyCareTask.objects.all()
+        
+        # Filter by patient if provided
+        # Use query_params for DRF Request, or GET for standard Django Request
+        query_params = getattr(self.request, 'query_params', self.request.GET)
+        patient_id = query_params.get('patient')
+        
+        if patient_id:
+            queryset = queryset.filter(patient_id=patient_id)
+        else:
+            # Default to today's tasks ONLY if no patient filter is present
+            # This maintains backward compatibility for the dashboard view
+            today = timezone.now().date()
+            queryset = queryset.filter(task_date=today)
+            
+        return queryset
 
     @action(detail=False, methods=['get'])
     def today(self, request):

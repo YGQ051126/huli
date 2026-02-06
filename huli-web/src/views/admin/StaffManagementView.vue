@@ -41,7 +41,7 @@
             <el-button type="primary" size="small" @click="openEditDialog(scope.row)">
               编辑
             </el-button>
-            <el-button type="danger" size="small" @click="handleDelete(scope.row.id)">
+            <el-button type="danger" size="small" @click="handleDelete(scope.row.id || scope.row.user?.id)">
               删除
             </el-button>
             <el-button type="success" size="small" @click="openAccountDialog(scope.row)">
@@ -255,8 +255,18 @@ const openAddDialog = () => {
 };
 
 const openEditDialog = (row: StaffUser) => {
-    editForm.id = Number(row.user.id);
-    editForm.userId = Number(row.user.id);
+    // 根据后端定义，StaffUser 的 primary_key 是 user 字段 (OneToOneField)
+    // 所以 staffId 实际上就是 userId
+    const id = row.user.id;
+    
+    if (!id) {
+        console.error('Cannot find staff/user ID for row:', row);
+        ElMessage.error('无法获取员工ID');
+        return;
+    }
+    
+    editForm.id = Number(id);
+    editForm.userId = Number(id);
     editForm.name = row.user.real_name;
     editForm.gender = row.user.gender || 'male';
     editForm.position = row.position;
@@ -267,8 +277,18 @@ const openEditDialog = (row: StaffUser) => {
 };
 
 const openAccountDialog = (row: StaffUser) => {
-    accountForm.staffId = Number(row.user.id);
-    accountForm.userId = Number(row.user.id);
+    // 根据后端定义，StaffUser 的 primary_key 是 user 字段 (OneToOneField)
+    // 所以 staffId 实际上就是 userId
+    const id = row.user.id;
+    
+    if (!id) {
+        console.error('Cannot find staff/user ID for row:', row);
+        ElMessage.error('无法获取员工ID');
+        return;
+    }
+    
+    accountForm.staffId = Number(id);
+    accountForm.userId = Number(id);
     accountForm.username = row.user.username;
     accountForm.newPassword = '';
     accountForm.status = row.user.status;

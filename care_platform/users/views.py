@@ -145,6 +145,48 @@ class StaffUserViewSet(viewsets.ModelViewSet):
             traceback.print_exc()
             return error_response(message=str(e), code=400)
 
+    def update(self, request, *args, **kwargs):
+        """Update staff user with custom error handling"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        try:
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            
+            if getattr(instance, '_prefetched_objects_cache', None):
+                # If 'prefetch_related' has been applied to a queryset, we need to
+                # forcibly invalidate the prefetch cache on the instance.
+                instance._prefetched_objects_cache = {}
+            
+            # Use StaffUserSerializer for response to avoid 'User' object has no attribute 'items' error
+            # when using StaffUserUpdateSerializer (which has DictField for user)
+            response_serializer = StaffUserSerializer(instance)
+            return Response(response_serializer.data)
+        except Exception as e:
+            print(f"Error updating staff user: {e}")
+            import traceback
+            traceback.print_exc()
+            return error_response(message=str(e), code=400)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Delete staff user and associated User account
+        """
+        try:
+            instance = self.get_object()
+            user = instance.user
+            
+            # Delete User will cascade delete StaffUser
+            if user:
+                user.delete()
+            else:
+                self.perform_destroy(instance)
+                
+            return success_response(message="Staff deleted successfully")
+        except Exception as e:
+            return error_response(message=str(e), code=500)
+
 class FamilyUserListByPatientView(generics.ListAPIView):
     """List family users by patient ID"""
     serializer_class = FamilyUserSerializer
@@ -235,38 +277,13 @@ class DashboardView(APIView):
     def get(self, request):
         user = request.user
         
-        # Check if user is staff or admin. Admins might want to see dashboard too or have their own.
-        # But this view is specifically "Staff Dashboard".
-        # If admin tries to access, maybe show overview?
-        # For now, let's allow staff role.
-        
-        # Original check:
-        # staff = getattr(user, 'staffuser', None)
-        # if not staff:
-        #    return error_response(code=400, message='Not a staff user')
-            
-        # Fix: Check role first
-        # if user.role != 'staff':
-             # If admin, maybe return empty or admin specific data? 
-             # For now, return error as frontend expects staff data
-             # return error_response(code=403, message='Not a staff user')
-             
-        # Allow looser check or auto-create profile if missing?
-        # The error "Staff profile missing" means user.role is 'staff' but StaffUser record doesn't exist.
-        
+        # Check if user has staff profile
         staff = getattr(user, 'staffuser', None)
-        
-        # If staff profile missing but role is staff, maybe we can proceed with limited data 
-        # or try to recover? For now, let's relax the requirement if possible, 
-        # but tasks need a staff instance.
-        
-        # If staff is None, we can't filter tasks by staff.
-        # But if the user just wants to see the page, we can return empty data.
         
         if not staff:
              # Log warning
              print(f"User {user.username} has role {user.role} but no StaffUser profile.")
-             # Return empty dashboard instead of error
+             # Return empty dashboard instead of error to prevent frontend crash
              return success_response({
                 'tasks': [],
                 'alerts': [],
@@ -389,14 +406,14 @@ class RegisterApplicationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        return success_response(serializer.data, message='申请提交成功，请等待管理员审核')
+        return success_response(serializer.data, message='Application submitted successfully, please wait for admin approval')
         
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def approve(self, request, pk=None):
         """Approve registration application"""
         application = self.get_object()
         if application.status != 'pending':
-            return error_response(message='该申请已被处理', code=400)
+            return error_response(message='This application has already been processed', code=400)
             
         try:
             with transaction.atomic():
@@ -446,19 +463,19 @@ class RegisterApplicationViewSet(viewsets.ModelViewSet):
                 application.approved_at = timezone.now()
                 application.save()
                 
-                return success_response(message='申请已批准，用户及关联记录已创建')
+                return success_response(message='Application approved, user and related records created')
                 
         except Exception as e:
             import traceback
             traceback.print_exc()
-            return error_response(message=f'批准失败: {str(e)}', code=500)
+            return error_response(message=f'Approval failed: {str(e)}', code=500)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def reject(self, request, pk=None):
         """Reject registration application"""
         application = self.get_object()
         if application.status != 'pending':
-            return error_response(message='该申请已被处理', code=400)
+            return error_response(message='This application has already been processed', code=400)
             
         reason = request.data.get('reason', '')
         application.status = 'rejected'
@@ -467,4 +484,4 @@ class RegisterApplicationViewSet(viewsets.ModelViewSet):
         application.approved_at = timezone.now()
         application.save()
         
-        return success_response(message='申请已拒绝')
+        return success_response(message='Application rejected')

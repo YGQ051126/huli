@@ -11,7 +11,7 @@
  Target Server Version : 80039 (8.0.39)
  File Encoding         : 65001
 
- Date: 01/02/2026 16:29:12
+ Date: 06/02/2026 14:55:34
 */
 
 SET NAMES utf8mb4;
@@ -86,7 +86,7 @@ CREATE TABLE `activity_gallery_activitymedia_patients`  (
   UNIQUE INDEX `activity_gallery_activ_activitymedia_id_patien_d3f3f218_uniq`(`activitymedia_id` ASC, `patient_id` ASC) USING BTREE,
   INDEX `activity_gallery_activitymedia_patients_patient_id_058d3de1_fk`(`patient_id` ASC) USING BTREE,
   CONSTRAINT `activity_gallery_activitymedia_patients_patient_id_058d3de1_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of activity_gallery_activitymedia_patients
@@ -107,7 +107,7 @@ CREATE TABLE `activity_gallery_activityparticipant`  (
   INDEX `activity_gallery_activityparticipant_staff_id_53f83af2_fk`(`staff_id` ASC) USING BTREE,
   CONSTRAINT `activity_gallery_activityparticipant_patient_id_d91c8946_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `activity_gallery_activityparticipant_staff_id_53f83af2_fk` FOREIGN KEY (`staff_id`) REFERENCES `users_staffuser` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of activity_gallery_activityparticipant
@@ -136,7 +136,6 @@ CREATE TABLE `announcements_announcement`  (
 -- ----------------------------
 -- Records of announcements_announcement
 -- ----------------------------
-INSERT INTO `announcements_announcement` VALUES (1, '测试', '无', 'all', 'published', '2026-01-10 03:47:25.933910', '2026-01-27 16:00:00.000000', '2026-01-10 03:47:25.933910', '2026-01-10 03:47:25.933910', 1);
 
 -- ----------------------------
 -- Table structure for appointments_appointment
@@ -448,6 +447,43 @@ INSERT INTO `auth_permission` VALUES (203, 'Can delete Daily Care Task', 51, 'de
 INSERT INTO `auth_permission` VALUES (204, 'Can view Daily Care Task', 51, 'view_dailycaretask');
 
 -- ----------------------------
+-- Table structure for bed_scheduling_bedassignment
+-- ----------------------------
+DROP TABLE IF EXISTS `bed_scheduling_bedassignment`;
+CREATE TABLE `bed_scheduling_bedassignment`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `bed_number` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `assign_date` datetime(6) NOT NULL,
+  `release_date` datetime(6) NULL DEFAULT NULL,
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `notes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `cleaning_notified` tinyint(1) NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  `assigned_by_id` bigint NULL DEFAULT NULL,
+  `elderly_id` int NOT NULL,
+  `room_id` bigint NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `bed_scheduling_bedas_assigned_by_id_52de195f_fk_users_use`(`assigned_by_id` ASC) USING BTREE,
+  INDEX `bed_scheduling_bedas_elderly_id_da5a9155_fk_patients_`(`elderly_id` ASC) USING BTREE,
+  INDEX `bed_scheduling_bedassignment_room_id_ed1982d3_fk_rooms_id`(`room_id` ASC) USING BTREE,
+  CONSTRAINT `bed_scheduling_bedas_assigned_by_id_52de195f_fk_users_use` FOREIGN KEY (`assigned_by_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `bed_scheduling_bedas_elderly_id_da5a9155_fk_patients_` FOREIGN KEY (`elderly_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `bed_scheduling_bedassignment_room_id_ed1982d3_fk_rooms_id` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of bed_scheduling_bedassignment
+-- ----------------------------
+INSERT INTO `bed_scheduling_bedassignment` VALUES (1, '1', '2026-02-05 13:24:22.490907', '2026-02-05 15:41:15.514670', 'completed', '', 1, '2026-02-05 13:24:22.492470', '2026-02-05 15:41:15.514670', 1, 1, 1);
+INSERT INTO `bed_scheduling_bedassignment` VALUES (2, '1', '2026-02-05 13:25:00.899506', '2026-02-05 15:41:15.511546', 'completed', '', 1, '2026-02-05 13:25:00.901038', '2026-02-05 15:41:15.511546', 1, 1, 1);
+INSERT INTO `bed_scheduling_bedassignment` VALUES (3, '2', '2026-02-05 13:12:05.801000', NULL, 'active', '', 1, '2026-02-05 13:29:18.624100', '2026-02-05 13:29:18.624100', 1, 1, 1);
+INSERT INTO `bed_scheduling_bedassignment` VALUES (4, '2', '2026-02-05 13:12:05.801000', NULL, 'active', '', 1, '2026-02-05 13:29:59.589878', '2026-02-05 13:29:59.589878', 2, 19, 1);
+INSERT INTO `bed_scheduling_bedassignment` VALUES (5, '3', '2026-02-05 13:12:05.801000', NULL, 'active', '', 1, '2026-02-05 13:46:03.352967', '2026-02-05 13:46:03.352967', 2, 1, 1);
+INSERT INTO `bed_scheduling_bedassignment` VALUES (6, '1', '2026-02-05 15:40:09.801000', '2026-02-05 20:22:30.500072', 'completed', '', 1, '2026-02-05 15:41:36.735587', '2026-02-05 20:22:30.500072', 10, 1, 1);
+INSERT INTO `bed_scheduling_bedassignment` VALUES (7, '1', '2026-02-05 20:33:28.694000', NULL, 'active', '', 1, '2026-02-05 20:34:11.104095', '2026-02-05 20:34:11.104095', 10, 1, 1);
+
+-- ----------------------------
 -- Table structure for care_records_carerecord
 -- ----------------------------
 DROP TABLE IF EXISTS `care_records_carerecord`;
@@ -472,7 +508,7 @@ CREATE TABLE `care_records_carerecord`  (
   INDEX `care_records_carerec_staff_id_e0b85e50_fk_users_sta`(`staff_id` ASC) USING BTREE,
   CONSTRAINT `care_records_carerec_staff_id_e0b85e50_fk_users_sta` FOREIGN KEY (`staff_id`) REFERENCES `users_staffuser` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `care_records_carerecord_patient_id_dc6027a6_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of care_records_carerecord
@@ -522,7 +558,7 @@ CREATE TABLE `care_records_dailycaretask`  (
   INDEX `care_records_dailyca_last_updated_by_id_06761eaf_fk_users_sta`(`last_updated_by_id` ASC) USING BTREE,
   CONSTRAINT `care_records_dailyca_last_updated_by_id_06761eaf_fk_users_sta` FOREIGN KEY (`last_updated_by_id`) REFERENCES `users_staffuser` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `care_records_dailyca_patient_id_16c808c8_fk_patients_` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of care_records_dailycaretask
@@ -533,6 +569,12 @@ INSERT INTO `care_records_dailycaretask` VALUES (3, '2026-01-30', 1, 1, 1, 1, '2
 INSERT INTO `care_records_dailycaretask` VALUES (4, '2026-01-30', 1, 1, 1, 1, '2026-01-30 16:29:23.717271', 2, 17);
 INSERT INTO `care_records_dailycaretask` VALUES (5, '2026-01-30', 1, 1, 1, 1, '2026-01-30 16:29:23.717799', 2, 18);
 INSERT INTO `care_records_dailycaretask` VALUES (6, '2026-01-30', 1, 1, 1, 1, '2026-01-30 16:29:23.719340', 2, 19);
+INSERT INTO `care_records_dailycaretask` VALUES (7, '2026-02-05', 1, 1, 1, 1, '2026-02-05 14:07:33.027720', 2, 1);
+INSERT INTO `care_records_dailycaretask` VALUES (8, '2026-02-05', 1, 1, 1, 1, '2026-02-05 14:07:33.029260', 2, 2);
+INSERT INTO `care_records_dailycaretask` VALUES (9, '2026-02-05', 1, 1, 1, 1, '2026-02-05 14:07:33.030784', 2, 16);
+INSERT INTO `care_records_dailycaretask` VALUES (10, '2026-02-05', 1, 1, 1, 1, '2026-02-05 14:07:33.030784', 2, 17);
+INSERT INTO `care_records_dailycaretask` VALUES (11, '2026-02-05', 1, 1, 1, 1, '2026-02-05 14:07:33.032371', 2, 18);
+INSERT INTO `care_records_dailycaretask` VALUES (12, '2026-02-05', 1, 1, 1, 1, '2026-02-05 14:07:33.032371', 2, 19);
 
 -- ----------------------------
 -- Table structure for care_records_vitalsigns
@@ -569,7 +611,7 @@ CREATE TABLE `communication_conversation`  (
   INDEX `communication_conversation_patient_id_23cad0bb_fk`(`patient_id` ASC) USING BTREE,
   CONSTRAINT `communication_conver_last_message_id_47721bd6_fk_communica` FOREIGN KEY (`last_message_id`) REFERENCES `communication_message` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `communication_conversation_patient_id_23cad0bb_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of communication_conversation
@@ -588,7 +630,7 @@ CREATE TABLE `communication_conversation_participants`  (
   INDEX `communication_conversation_participants_user_id_21a3bebd_fk`(`user_id` ASC) USING BTREE,
   CONSTRAINT `communication_conver_conversation_id_0fe30449_fk_communica` FOREIGN KEY (`conversation_id`) REFERENCES `communication_conversation` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `communication_conversation_participants_user_id_21a3bebd_fk` FOREIGN KEY (`user_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of communication_conversation_participants
@@ -619,13 +661,17 @@ CREATE TABLE `communication_message`  (
   CONSTRAINT `communication_message_patient_id_048ddaac_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `communication_message_receiver_id_a453b719_fk` FOREIGN KEY (`receiver_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `communication_message_sender_id_11380a9e_fk` FOREIGN KEY (`sender_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of communication_message
 -- ----------------------------
 INSERT INTO `communication_message` VALUES (1, 'text', '你好', NULL, NULL, 'sent', 0, NULL, '2026-01-17 07:28:22.117736', '2026-01-17 07:28:22.117736', NULL, 4, 2);
 INSERT INTO `communication_message` VALUES (2, 'text', '你好', NULL, NULL, 'sent', 0, NULL, '2026-01-28 12:15:38.418189', '2026-01-28 12:15:38.418189', NULL, 2, 9);
+INSERT INTO `communication_message` VALUES (3, 'text', '你好', NULL, NULL, 'sent', 0, NULL, '2026-02-05 15:47:39.784304', '2026-02-05 15:47:39.784304', NULL, 4, 10);
+INSERT INTO `communication_message` VALUES (4, 'text', '你好', NULL, NULL, 'sent', 0, NULL, '2026-02-05 15:53:05.649034', '2026-02-05 15:53:05.649034', NULL, 4, 10);
+INSERT INTO `communication_message` VALUES (5, 'text', '在吗', NULL, NULL, 'sent', 0, NULL, '2026-02-05 16:45:14.673629', '2026-02-05 16:45:14.673629', NULL, 4, 10);
+INSERT INTO `communication_message` VALUES (6, 'text', '你好', NULL, NULL, 'sent', 0, NULL, '2026-02-06 14:49:19.995197', '2026-02-06 14:49:19.995197', NULL, 10, 9);
 
 -- ----------------------------
 -- Table structure for communication_notification
@@ -645,7 +691,7 @@ CREATE TABLE `communication_notification`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `communication_notification_user_id_6611ccd5_fk`(`user_id` ASC) USING BTREE,
   CONSTRAINT `communication_notification_user_id_6611ccd5_fk` FOREIGN KEY (`user_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of communication_notification
@@ -670,7 +716,7 @@ CREATE TABLE `django_admin_log`  (
   CONSTRAINT `django_admin_log_content_type_id_c4bce8eb_fk_django_co` FOREIGN KEY (`content_type_id`) REFERENCES `django_content_type` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `django_admin_log_user_id_c564eba6_fk` FOREIGN KEY (`user_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `django_admin_log_chk_1` CHECK (`action_flag` >= 0)
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of django_admin_log
@@ -753,7 +799,7 @@ CREATE TABLE `django_migrations`  (
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `applied` datetime(6) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 80 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 82 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of django_migrations
@@ -833,6 +879,8 @@ INSERT INTO `django_migrations` VALUES (76, 'users', '0009_alter_familyuser_opti
 INSERT INTO `django_migrations` VALUES (77, 'users', '0010_alter_staffuser_department_alter_staffuser_position', '2026-01-30 06:13:43.933216');
 INSERT INTO `django_migrations` VALUES (78, 'care_records', '0003_alter_carerecord_options_alter_caretemplate_options_and_more', '2026-01-30 16:21:48.537351');
 INSERT INTO `django_migrations` VALUES (79, 'users', '0011_leaverequest_rejection_reason', '2026-01-30 20:28:31.092886');
+INSERT INTO `django_migrations` VALUES (80, 'bed_scheduling', '0005_initial', '2026-02-05 13:15:25.009823');
+INSERT INTO `django_migrations` VALUES (81, 'users', '0012_alter_user_email_alter_user_phone', '2026-02-06 13:26:23.594212');
 
 -- ----------------------------
 -- Table structure for django_session
@@ -868,7 +916,7 @@ CREATE TABLE `notifications_carereminder`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `notifications_carereminder_patient_id_1976be6a_fk`(`patient_id` ASC) USING BTREE,
   CONSTRAINT `notifications_carereminder_patient_id_1976be6a_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of notifications_carereminder
@@ -892,7 +940,7 @@ CREATE TABLE `notifications_notification`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `notifications_notification_user_id_b5e8c0ff_fk`(`user_id` ASC) USING BTREE,
   CONSTRAINT `notifications_notification_user_id_b5e8c0ff_fk` FOREIGN KEY (`user_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of notifications_notification
@@ -914,7 +962,7 @@ CREATE TABLE `notifications_reminderparticipation`  (
   INDEX `notifications_reminderparticipation_family_id_dd500393_fk`(`family_id` ASC) USING BTREE,
   CONSTRAINT `notifications_remind_reminder_id_43e7a30d_fk_notificat` FOREIGN KEY (`reminder_id`) REFERENCES `notifications_carereminder` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `notifications_reminderparticipation_family_id_dd500393_fk` FOREIGN KEY (`family_id`) REFERENCES `users_familyuser` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of notifications_reminderparticipation
@@ -941,7 +989,7 @@ CREATE TABLE `patients_healthassessment`  (
   INDEX `patients_healthassessment_created_by_id_f2141781_fk`(`created_by_id` ASC) USING BTREE,
   CONSTRAINT `patients_healthassessment_created_by_id_f2141781_fk` FOREIGN KEY (`created_by_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `patients_healthassessment_patient_id_b1bef1c0_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of patients_healthassessment
@@ -966,7 +1014,7 @@ CREATE TABLE `patients_medicalrecord`  (
   INDEX `patients_medicalrecord_doctor_id_fab97954_fk`(`doctor_id` ASC) USING BTREE,
   CONSTRAINT `patients_medicalrecord_doctor_id_fab97954_fk` FOREIGN KEY (`doctor_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `patients_medicalrecord_patient_id_c059a22f_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of patients_medicalrecord
@@ -1005,9 +1053,9 @@ CREATE TABLE `patients_patient`  (
 -- ----------------------------
 -- Records of patients_patient
 -- ----------------------------
-INSERT INTO `patients_patient` VALUES (1, '王五', 'male', 75, '110101194501011236', '13700137000', '北京市西城区', 'level3', '2023-03-01', 'active', '2025-12-11 04:13:22.298416', '2026-01-11 13:54:59.751785', 'good', NULL, NULL, NULL, NULL, NULL, '101', '1', NULL);
+INSERT INTO `patients_patient` VALUES (1, '王五', 'male', 75, '110101194501011236', '13700137000', '北京市西城区', 'level3', '2023-03-01', 'active', '2025-12-11 04:13:22.298416', '2026-02-05 20:34:11.104095', 'good', NULL, NULL, NULL, NULL, NULL, '101', '1', NULL);
 INSERT INTO `patients_patient` VALUES (2, '赵六', 'female', 68, '110101195201011237', '13600136000', '北京市东城区', 'level2', '2023-04-01', 'active', '2025-12-11 04:13:22.301415', '2025-12-11 04:13:22.301415', 'good', NULL, NULL, NULL, NULL, NULL, '102', '1', NULL);
-INSERT INTO `patients_patient` VALUES (16, '尤国强', 'male', 15, '235165161655555555', '15806549116', '安徽', 'level1', '2026-01-05', 'active', '2026-01-05 12:47:55.345538', '2026-01-05 12:47:55.345538', 'good', NULL, NULL, NULL, NULL, NULL, '103', '1', NULL);
+INSERT INTO `patients_patient` VALUES (16, '单方事故', 'male', 15, '235165161655555555', '15806549116', '安徽', 'level1', '2026-01-05', 'active', '2026-01-05 12:47:55.345538', '2026-02-05 12:56:54.284359', 'good', NULL, NULL, NULL, NULL, NULL, '103', '1', NULL);
 INSERT INTO `patients_patient` VALUES (17, '搞个群', 'male', 60, '156156464464444444', '15805684919', '安徽', 'level2', '2026-01-06', 'active', '2026-01-06 04:02:51.248523', '2026-01-06 04:02:51.248523', 'normal', NULL, NULL, NULL, NULL, NULL, '103', '2', NULL);
 INSERT INTO `patients_patient` VALUES (18, '测试1', 'male', 80, '165165151195655555', '15805684919', '安徽112', 'level3', '2026-01-06', 'active', '2026-01-06 05:43:59.337400', '2026-01-07 11:21:41.029149', 'poor', NULL, NULL, NULL, NULL, NULL, '103', '3', NULL);
 INSERT INTO `patients_patient` VALUES (19, 'TestElderly', 'male', 80, '110101194001010000', '13800138000', NULL, 'level1', '2026-01-07', 'active', '2026-01-07 12:28:43.730681', '2026-01-07 12:28:43.730681', 'good', NULL, NULL, NULL, NULL, NULL, '201', '4', NULL);
@@ -1030,7 +1078,7 @@ CREATE TABLE `patients_patientdocument`  (
   INDEX `patients_patientdocument_uploaded_by_id_aab77fbc_fk`(`uploaded_by_id` ASC) USING BTREE,
   CONSTRAINT `patients_patientdocument_patient_id_992efd30_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `patients_patientdocument_uploaded_by_id_aab77fbc_fk` FOREIGN KEY (`uploaded_by_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of patients_patientdocument
@@ -1052,7 +1100,7 @@ CREATE TABLE `patients_patienthealthrecord`  (
   INDEX `patients_patienthealthrecord_recorded_by_id_7b074264_fk`(`recorded_by_id` ASC) USING BTREE,
   CONSTRAINT `patients_patienthealthrecord_patient_id_0ac7e352_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `patients_patienthealthrecord_recorded_by_id_7b074264_fk` FOREIGN KEY (`recorded_by_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of patients_patienthealthrecord
@@ -1103,7 +1151,7 @@ CREATE TABLE `payments_billitem`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `payments_billitem_bill_id_15fc4cf1_fk_payments_bill_id`(`bill_id` ASC) USING BTREE,
   CONSTRAINT `payments_billitem_bill_id_15fc4cf1_fk_payments_bill_id` FOREIGN KEY (`bill_id`) REFERENCES `payments_bill` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of payments_billitem
@@ -1160,15 +1208,15 @@ CREATE TABLE `rooms`  (
 -- ----------------------------
 -- Records of rooms
 -- ----------------------------
-INSERT INTO `rooms` VALUES (1, '101', '', '2', '3', 'TestElderly', '2026-01-07 11:39:39.890295', '2026-01-22 12:30:40.379750');
-INSERT INTO `rooms` VALUES (2, '102', '1', '2', '3', '4', '2026-01-07 11:39:39.894618', '2026-01-07 11:39:39.894618');
-INSERT INTO `rooms` VALUES (3, '103', '1', '2', '3', '4', '2026-01-07 11:39:39.897810', '2026-01-07 11:39:39.897810');
+INSERT INTO `rooms` VALUES (1, '101', '王五', 'TestElderly', '', '', '2026-01-07 11:39:39.890295', '2026-02-05 20:34:11.103066');
+INSERT INTO `rooms` VALUES (2, '102', '', '2', '3', '4', '2026-01-07 11:39:39.894618', '2026-02-05 14:11:52.058212');
+INSERT INTO `rooms` VALUES (3, '103', '单方事故', '搞个群', '测试1', '4', '2026-01-07 11:39:39.897810', '2026-01-07 11:39:39.897810');
 INSERT INTO `rooms` VALUES (4, '104', '1', '2', '3', '4', '2026-01-07 11:39:39.900898', '2026-01-07 11:39:39.900898');
-INSERT INTO `rooms` VALUES (5, '201', '1', '2', '3', '4', '2026-01-07 11:39:39.905195', '2026-01-07 11:39:39.905195');
+INSERT INTO `rooms` VALUES (5, '201', '1', '2', '3', 'TestElderly', '2026-01-07 11:39:39.905195', '2026-01-07 11:39:39.905195');
 INSERT INTO `rooms` VALUES (6, '202', '1', '2', '3', '4', '2026-01-07 11:39:39.908262', '2026-01-07 11:39:39.908262');
 INSERT INTO `rooms` VALUES (7, '203', '1', '2', '3', '4', '2026-01-07 11:39:39.912068', '2026-01-07 11:39:39.912068');
 INSERT INTO `rooms` VALUES (8, '204', '1', '2', '3', '4', '2026-01-07 11:39:39.915468', '2026-01-07 11:39:39.915468');
-INSERT INTO `rooms` VALUES (9, '301', '1', '2', '3', '301-4', '2026-01-07 11:39:39.918561', '2026-01-07 11:39:39.918561');
+INSERT INTO `rooms` VALUES (9, '301', '1', '2', '3', '', '2026-01-07 11:39:39.918561', '2026-01-07 11:39:39.918561');
 
 -- ----------------------------
 -- Table structure for services_customservicerequest
@@ -1199,7 +1247,7 @@ CREATE TABLE `services_customservicerequest`  (
   CONSTRAINT `services_customservicerequest_approved_by_id_74b75162_fk` FOREIGN KEY (`approved_by_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `services_customservicerequest_family_id_795c4831_fk` FOREIGN KEY (`family_id`) REFERENCES `users_familyuser` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `services_customservicerequest_patient_id_ff937981_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of services_customservicerequest
@@ -1395,11 +1443,14 @@ CREATE TABLE `tasks_task`  (
   CONSTRAINT `tasks_task_created_by_id_1345568a_fk` FOREIGN KEY (`created_by_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `tasks_task_patient_id_d01e369b_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients_patient` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `tasks_task_staff_id_3256c024_fk` FOREIGN KEY (`staff_id`) REFERENCES `users_staffuser` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tasks_task
 -- ----------------------------
+INSERT INTO `tasks_task` VALUES (1, 'bed_scheduling', '保洁：清理房间101床位3', '为院民 王五 分配床位后，请清理房间 101 的床位 3。', '2026-02-05', NULL, 'completed', 'high', '2026-02-05 13:46:21.214466', '2026-02-05 13:46:03.356147', '2026-02-05 13:46:21.214466', 2, 1, 10);
+INSERT INTO `tasks_task` VALUES (2, 'bed_scheduling', '保洁：清理房间101床位1', '为院民 王五 分配床位后，请清理房间 101 的床位 1。', '2026-02-05', NULL, 'completed', 'high', '2026-02-05 15:42:01.784912', '2026-02-05 15:41:36.737601', '2026-02-05 15:42:01.784912', 10, 1, 10);
+INSERT INTO `tasks_task` VALUES (3, 'bed_scheduling', '保洁：清理房间101床位1', '为院民 王五 分配床位后，请清理房间 101 的床位 1。', '2026-02-05', NULL, 'pending', 'high', NULL, '2026-02-05 20:34:11.108805', '2026-02-05 20:34:11.108805', 10, 1, 10);
 
 -- ----------------------------
 -- Table structure for tasks_taskassignment
@@ -1418,11 +1469,14 @@ CREATE TABLE `tasks_taskassignment`  (
   CONSTRAINT `tasks_taskassignment_assigned_by_id_62933098_fk` FOREIGN KEY (`assigned_by_id`) REFERENCES `users_user` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `tasks_taskassignment_staff_id_64aef0f7_fk` FOREIGN KEY (`staff_id`) REFERENCES `users_staffuser` (`user_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT `tasks_taskassignment_task_id_6281ef9c_fk_tasks_task_id` FOREIGN KEY (`task_id`) REFERENCES `tasks_task` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tasks_taskassignment
 -- ----------------------------
+INSERT INTO `tasks_taskassignment` VALUES (1, '2026-02-05 13:46:03.357431', 2, 10, 1);
+INSERT INTO `tasks_taskassignment` VALUES (2, '2026-02-05 15:41:36.738606', 10, 10, 2);
+INSERT INTO `tasks_taskassignment` VALUES (3, '2026-02-05 20:34:11.108805', 10, 10, 3);
 
 -- ----------------------------
 -- Table structure for tasks_taskcompletion
@@ -1443,6 +1497,8 @@ CREATE TABLE `tasks_taskcompletion`  (
 -- ----------------------------
 -- Records of tasks_taskcompletion
 -- ----------------------------
+INSERT INTO `tasks_taskcompletion` VALUES (1, '2026-02-05 13:46:21.217550', '', NULL, 10);
+INSERT INTO `tasks_taskcompletion` VALUES (2, '2026-02-05 15:42:01.786498', '', NULL, 10);
 
 -- ----------------------------
 -- Table structure for users_familyuser
@@ -1548,7 +1604,8 @@ CREATE TABLE `users_staffuser`  (
 INSERT INTO `users_staffuser` VALUES (2, 'Nurse', 'Nursing', '2026-01-30 06:26:03.277072', '2026-01-30 06:26:03.277072');
 INSERT INTO `users_staffuser` VALUES (6, '3124', 'nursing', '2026-01-09 12:51:23.809002', '2026-01-10 04:49:51.268941');
 INSERT INTO `users_staffuser` VALUES (7, '护理', 'nursing', '2026-01-10 02:16:29.084163', '2026-01-10 02:16:29.084163');
-INSERT INTO `users_staffuser` VALUES (8, '护士', '护理部', '2026-01-17 08:04:52.665282', '2026-01-17 08:04:52.665282');
+INSERT INTO `users_staffuser` VALUES (10, '保洁', '后勤', '2026-02-05 13:46:03.346971', '2026-02-05 21:36:51.066834');
+INSERT INTO `users_staffuser` VALUES (13, '护士', 'nursing', '2026-02-06 13:32:41.506641', '2026-02-06 13:48:27.562381');
 
 -- ----------------------------
 -- Table structure for users_user
@@ -1568,8 +1625,8 @@ CREATE TABLE `users_user`  (
   `role` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `real_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `phone` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `email` varchar(254) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `avatar` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `created_at` datetime(6) NOT NULL,
   `updated_at` datetime(6) NOT NULL,
@@ -1581,19 +1638,20 @@ CREATE TABLE `users_user`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `username`(`username` ASC) USING BTREE,
   UNIQUE INDEX `phone`(`phone` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of users_user
 -- ----------------------------
-INSERT INTO `users_user` VALUES (1, NULL, 1, '', '', 1, 1, '2025-12-11 02:50:29.157447', 'admin', 'admin123', 'admin', 'active', '管理员', '13800138000', '', '', '2025-12-11 02:50:29.348646', '2026-01-27 09:09:34.325665', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `users_user` VALUES (2, NULL, 0, '护士王五', '', 1, 1, '2025-12-20 02:03:45.171416', 'staff3', 'staff123', 'staff', 'active', '护士王五', '13800138008', NULL, '', '2025-12-20 02:03:45.171416', '2026-01-18 08:52:42.331079', NULL, NULL, '护士', '护理部', NULL);
+INSERT INTO `users_user` VALUES (1, NULL, 1, '', '', 1, 1, '2025-12-11 02:50:29.157447', 'admin', 'admin123', 'admin', 'active', '管理员', '13800138000', '1234562@qq.com', '', '2025-12-11 02:50:29.348646', '2026-02-05 12:53:21.698366', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `users_user` VALUES (2, NULL, 0, '护士王五', '', 1, 1, '2025-12-20 02:03:45.171416', 'staff3', 'staff123', 'staff', 'active', '护士王五', '13800138008', '21355342@qq.com', '', '2025-12-20 02:03:45.171416', '2026-02-05 12:53:36.420985', NULL, NULL, '护士', '护理部', NULL);
 INSERT INTO `users_user` VALUES (3, NULL, 0, '医生赵六', '', 1, 1, '2025-12-20 02:03:45.182302', 'staff4', 'staff123', 'staff', 'active', '医生赵六', '13800138009', NULL, '', '2025-12-20 02:03:45.182302', '2026-01-18 08:52:42.334862', NULL, NULL, '医生', '医疗部', NULL);
 INSERT INTO `users_user` VALUES (4, NULL, 0, '家属张三', '', 0, 1, '2025-12-20 02:03:45.186892', 'family3', 'family123', 'family', 'active', '家属张三', '13800138010', NULL, '', '2025-12-20 02:03:45.186892', '2026-01-18 08:52:42.338015', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `users_user` VALUES (5, NULL, 0, '家属李四', '', 0, 1, '2025-12-20 02:03:45.191445', 'family4', 'family123', 'family', 'active', '家属李四', '13800138011', NULL, '', '2025-12-20 02:03:45.191445', '2026-01-18 08:52:42.341064', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `users_user` VALUES (6, NULL, 0, '1234', '', 0, 1, '2026-01-09 12:51:23.788485', '3214', '1324', 'staff', 'active', '1234', '1325645644', '1234@qq.com', '', '2026-01-09 12:51:23.788485', '2026-01-18 08:52:42.343965', NULL, NULL, NULL, NULL, 'male');
 INSERT INTO `users_user` VALUES (7, NULL, 0, '员工1', '', 0, 1, '2026-01-10 02:16:29.076433', '11111', '11111', 'staff', 'active', '员工1', '1111', '2222@qq.com', '', '2026-01-10 02:16:29.076433', '2026-01-18 08:52:42.346787', NULL, NULL, NULL, NULL, 'male');
-INSERT INTO `users_user` VALUES (8, NULL, 0, '', '', 0, 1, '2026-01-17 07:57:36.206717', 'staff', 'password', 'staff', 'pending', '测试员工', '13800138001', 'staff@example.com', '', '2026-01-17 07:57:36.206717', '2026-01-18 08:52:42.328543', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `users_user` VALUES (9, NULL, 0, 'p1', '', 0, 1, '2026-01-27 09:19:18.926396', 'family', 'family123', 'family', 'active', 'p1', '1234512345', NULL, '', '2026-01-27 09:19:18.926396', '2026-01-27 09:19:18.926396', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `users_user` VALUES (10, NULL, 0, '保洁员1', '', 0, 1, '2026-02-05 13:46:03.344136', 'cleaner1', 'password', 'staff', 'active', '保洁员1', '15900000001', '11111', '', '2026-02-05 13:46:03.344136', '2026-02-05 21:36:51.069974', NULL, NULL, '保洁', NULL, 'male');
+INSERT INTO `users_user` VALUES (13, NULL, 0, '员工5', '', 0, 1, '2026-02-06 13:32:41.505636', 'staff5', '12345', 'staff', 'active', '员工5', '1354684684', '234562346', '', '2026-02-06 13:32:41.505636', '2026-02-06 13:48:27.565486', NULL, NULL, NULL, NULL, 'male');
 
 SET FOREIGN_KEY_CHECKS = 1;

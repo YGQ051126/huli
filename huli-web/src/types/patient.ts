@@ -6,19 +6,12 @@ export interface Patient {
   age: number
   gender: 'male' | 'female'
   avatar?: string
-  idCard: string
+  id_card: string
   phone?: string
   address?: string
   health_level: string
   care_level: string
-  room?: {
-    id: string
-    room_number: string
-    bed1_id: string
-    bed2_id: string
-    bed3_id: string
-    bed4_id: string
-  }
+  room?: string
   bed_id: string
   admission_date: string
   status: 'active' | 'discharged' | 'transferred'

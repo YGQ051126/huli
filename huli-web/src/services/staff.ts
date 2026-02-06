@@ -2,6 +2,7 @@ import api from './api'
 import type { User } from '@/types/user'
 
 export interface StaffUser {
+  id: number
   user: User
   position: string
   department: string

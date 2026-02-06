@@ -38,7 +38,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         # Plain text password storage as requested
-        user = User.objects.create(  # type: ignore[attr-defined]
+        user = User.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
             real_name=validated_data['real_name'],
@@ -77,7 +77,7 @@ class FamilyUserCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user_data = validated_data.pop('user')
         # Plain text password storage as requested
-        user = User.objects.create(  # type: ignore[attr-defined]
+        user = User.create_user(
             username=user_data['username'],
             password=user_data['password'],
             real_name=user_data['real_name'],
@@ -114,7 +114,7 @@ class StaffUserCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         user_data = validated_data.pop('user')
-        user = User.objects.create_user(  # type: ignore[attr-defined]
+        user = User.create_user(
             username=user_data['username'],
             password=user_data['password'],
             real_name=user_data['real_name'],
@@ -164,16 +164,43 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class StaffUserUpdateSerializer(serializers.ModelSerializer):
     """Staff user update serializer"""
+    # Use UserSerializer for update instead of UserCreateSerializer to avoid unique constraints issues
+    # But we need to make fields writable.
+    # Actually, simpler is to define a custom nested serializer or just DictField
+    user = serializers.DictField(required=False)
     
     class Meta:
         model = StaffUser
-        fields = ['position', 'department']
+        fields = ['position', 'department', 'user']
         
     def update(self, instance, validated_data):
-        # ĂĹĽÂ¸ĂźÄĂ StaffUser ÄžĂ position ĹĂ department ĂĂĹĂ
+        user_data = validated_data.pop('user', None)
+        
+        # Update StaffUser fields
         instance.position = validated_data.get('position', instance.position)
         instance.department = validated_data.get('department', instance.department)
         instance.save()
+        
+        # Update User fields if provided
+        if user_data:
+            user = instance.user
+            if 'real_name' in user_data:
+                user.real_name = user_data['real_name']
+            if 'phone' in user_data:
+                # In a real app, we should check for uniqueness if phone changed
+                # For now, just update
+                user.phone = user_data['phone']
+            if 'email' in user_data:
+                user.email = user_data['email']
+            if 'gender' in user_data:
+                user.gender = user_data['gender']
+            if 'status' in user_data:
+                user.status = user_data['status']
+            if 'password' in user_data and user_data['password']:
+                user.password = user_data['password']
+                
+            user.save()
+            
         return instance
 
 from .models import User, FamilyUser, StaffUser, LeaveRequest, RegisterApplication
@@ -188,9 +215,9 @@ class RegisterApplicationSerializer(serializers.ModelSerializer):
     
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("ÓĂť§ĂűŇŃ´ćÔÚ")
+            raise serializers.ValidationError("Username already exists")
         if RegisterApplication.objects.filter(username=value, status='pending').exists():
-            raise serializers.ValidationError("¸ĂÓĂť§ĂűŇŃÔÚÉęÇëÖĐ")
+            raise serializers.ValidationError("This username is already pending approval")
         return value
 
 class LeaveRequestSerializer(serializers.ModelSerializer):

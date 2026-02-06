@@ -223,7 +223,7 @@ const renderChart = () => {
         chartInstance = echarts.init(chartRef.value);
       }
       
-      const dates = statsData.value.map(d => new Date(d.month).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' }));
+      const dates = statsData.value.map(d => formatMonth(d.month));
       const values = statsData.value.map(d => d.total);
       
       const option = {
@@ -247,7 +247,7 @@ const exportStats = () => {
   
   const header = ['月份', '总收入'];
   const rows = statsData.value.map(d => [
-    new Date(d.month).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' }),
+    formatMonth(d.month),
     d.total
   ]);
   
@@ -300,6 +300,18 @@ const getStatusType = (status: string) => {
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '';
   return new Date(dateStr).toLocaleString();
+};
+
+const formatMonth = (dateStr?: string) => {
+  if (!dateStr) return '';
+  // Try to handle YYYY-MM-DD manually to avoid timezone issues
+  const match = dateStr.match(/^(\d{4})-(\d{2})/);
+  if (match) {
+    return `${match[1]}年${parseInt(match[2] || '0')}月`;
+  }
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return `${date.getFullYear()}年${date.getMonth() + 1}月`;
 };
 </script>
 
